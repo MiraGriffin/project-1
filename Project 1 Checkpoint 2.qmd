@@ -4,8 +4,13 @@ author: "Mira Griffin, Eloise Melendez, Chloe Schurter"
 format: html
 ---
 
-## Quarto
+## Do certain months of the year tend to have a higher amount of suspected measles cases? (custom function/iteration)
 
+## Is the ratio of measles cases to rubella cases different depending on the country? (mutate)
+
+## Does the proportion of discarded measles cases to suspected measles cases decrease from year to year? (iteration over years, proportion column, dummy yes/no variable)
+
+## Do certain regions have higher measles incident rates per 1,000,000 people, on average? (columns are regions, average incident rate on rows, iterate over regions)
 Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
 
 ## Running Code
