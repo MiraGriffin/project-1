@@ -1,6 +1,6 @@
 ---
 title: "Project 1 Checkpoint 2"
-author: "Mira Griffin \nEloise Melendez \nChloe Schurter"
+author: "Mira Griffin, Eloise Melendez, Chloe Schurter"
 format: html
 ---
 
