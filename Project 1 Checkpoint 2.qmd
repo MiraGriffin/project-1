@@ -44,7 +44,29 @@ summ_sus_measles_per_month("Algeria")
 summ_sus_measles_per_month("Bulgaria")
 ```
 
-## Is the ratio of measles cases to rubella cases different depending on the country? (mutate)
+## Is the ratio of measles cases to rubella cases per year different depending on the country? (mutate)
+```{r}
+measles_prop_year <- cases_year |> 
+  group_by(country, year) |> 
+  mutate(prop_tot_measles_per_year =                                             ifelse(
+      measles_total + rubella_total == 0,
+      NA,
+      measles_total / (measles_total + rubella_total)
+    )) |>
+  select(country, year, prop_tot_measles_per_year)
+
+measles_prop_tot <- measles_prop_year |>
+  group_by(country) |>
+  summarize(avg_prop_tot_measles = 
+              ifelse(all(is.na(prop_tot_measles_per_year)),
+                     NA,
+                     mean(prop_tot_measles_per_year, 
+                          na.rm = TRUE)), .groups = "drop")
+measles_prop <- measles_prop_year |> left_join(measles_prop_tot,
+                                               by = "country")
+measles_prop
+```
+
 
 ## Does the proportion of discarded measles cases to suspected measles cases decrease from year to year? (iteration over years, proportion column, dummy yes/no variable)
 
