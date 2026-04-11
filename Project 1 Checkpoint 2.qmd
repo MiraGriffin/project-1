@@ -3,8 +3,46 @@ title: "Project 1 Checkpoint 2"
 author: "Mira Griffin, Eloise Melendez, Chloe Schurter"
 format: html
 ---
+```{r}
+#| echo: false
+#| include: false
 
-## Do certain months of the year tend to have a higher amount of suspected measles cases? (custom function/iteration)
+library(tidyverse)
+
+cases_month <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_month.csv')
+cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_year.csv')
+
+```
+
+## Do certain months of the year tend to have a higher amount of suspected measles cases, for different countries? (custom function/iteration)
+
+
+```{r}
+
+summ_sus_measles_per_month <- function(country_name){
+  country_data <- cases_month |> 
+    filter(country == country_name)
+  
+  summ_sus_measles <- tibble()
+  
+  for(mon in 1:12) {
+    mon_data <- country_data |> 
+      filter(month == mon)
+    
+    summ_sus_measles <- bind_rows(summ_sus_measles, tibble(
+      country = country_name,
+      month = month.name[mon],
+      mean = mean(mon_data$measles_suspect, na.rm = TRUE),
+      SD = sd(mon_data$measles_suspect, na.rm = TRUE)
+    ))
+  }
+  
+  return(summ_sus_measles)
+}
+
+summ_sus_measles_per_month("Algeria")
+summ_sus_measles_per_month("Bulgaria")
+```
 
 ## Is the ratio of measles cases to rubella cases different depending on the country? (mutate)
 

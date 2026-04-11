@@ -105,15 +105,83 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<section id="quarto" class="level2">
-<h2 class="anchored" data-anchor-id="quarto">Quarto</h2>
+<section id="do-certain-months-of-the-year-tend-to-have-a-higher-amount-of-suspected-measles-cases-for-different-countries-custom-functioniteration" class="level2">
+<h2 class="anchored" data-anchor-id="do-certain-months-of-the-year-tend-to-have-a-higher-amount-of-suspected-measles-cases-for-different-countries-custom-functioniteration">Do certain months of the year tend to have a higher amount of suspected measles cases, for different countries? (custom function/iteration)</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>summ_sus_measles_per_month <span class="ot">&lt;-</span> <span class="cf">function</span>(country_name){</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  country_data <span class="ot">&lt;-</span> cases_month <span class="sc">|&gt;</span> </span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(country <span class="sc">==</span> country_name)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  summ_sus_measles <span class="ot">&lt;-</span> <span class="fu">tibble</span>()</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span>(mon <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="dv">12</span>) {</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>    mon_data <span class="ot">&lt;-</span> country_data <span class="sc">|&gt;</span> </span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(month <span class="sc">==</span> mon)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>    summ_sus_measles <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(summ_sus_measles, <span class="fu">tibble</span>(</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>      <span class="at">country =</span> country_name,</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>      <span class="at">month =</span> month.name[mon],</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>      <span class="at">mean =</span> <span class="fu">mean</span>(mon_data<span class="sc">$</span>measles_suspect, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>      <span class="at">SD =</span> <span class="fu">sd</span>(mon_data<span class="sc">$</span>measles_suspect, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>    ))</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(summ_sus_measles)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="fu">summ_sus_measles_per_month</span>(<span class="st">"Algeria"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 12 × 4
+   country month      mean     SD
+   &lt;chr&gt;   &lt;chr&gt;     &lt;dbl&gt;  &lt;dbl&gt;
+ 1 Algeria January   48     96.1 
+ 2 Algeria February  77.3  153.  
+ 3 Algeria March     66.8  174.  
+ 4 Algeria April     47.2  120.  
+ 5 Algeria May       45.6   75.1 
+ 6 Algeria June      32.2   60.2 
+ 7 Algeria July      12.4   22.7 
+ 8 Algeria August    12.2   16.9 
+ 9 Algeria September  6.57   8.68
+10 Algeria October   14.9   21.7 
+11 Algeria November  15.4   20.0 
+12 Algeria December   8.29  10.6 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summ_sus_measles_per_month</span>(<span class="st">"Bulgaria"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 12 × 4
+   country  month      mean    SD
+   &lt;chr&gt;    &lt;chr&gt;     &lt;dbl&gt; &lt;dbl&gt;
+ 1 Bulgaria January   11    31.1 
+ 2 Bulgaria February  16.7  31.9 
+ 3 Bulgaria March     31.1  71.7 
+ 4 Bulgaria April     34.2  86.8 
+ 5 Bulgaria May       33.1  82.7 
+ 6 Bulgaria June      34.5  73.7 
+ 7 Bulgaria July      11.9  26.1 
+ 8 Bulgaria August     4.62 12.3 
+ 9 Bulgaria September  2.38  5.29
+10 Bulgaria October    1.71  4.11
+11 Bulgaria November   2.5   6.28
+12 Bulgaria December   5.86 15.5 </code></pre>
+</div>
+</div>
+</section>
+<section id="is-the-ratio-of-measles-cases-to-rubella-cases-different-depending-on-the-country-mutate" class="level2">
+<h2 class="anchored" data-anchor-id="is-the-ratio-of-measles-cases-to-rubella-cases-different-depending-on-the-country-mutate">Is the ratio of measles cases to rubella cases different depending on the country? (mutate)</h2>
+</section>
+<section id="does-the-proportion-of-discarded-measles-cases-to-suspected-measles-cases-decrease-from-year-to-year-iteration-over-years-proportion-column-dummy-yesno-variable" class="level2">
+<h2 class="anchored" data-anchor-id="does-the-proportion-of-discarded-measles-cases-to-suspected-measles-cases-decrease-from-year-to-year-iteration-over-years-proportion-column-dummy-yesno-variable">Does the proportion of discarded measles cases to suspected measles cases decrease from year to year? (iteration over years, proportion column, dummy yes/no variable)</h2>
+</section>
+<section id="do-certain-regions-have-higher-measles-incident-rates-per-1000000-people-on-average-columns-are-regions-average-incident-rate-on-rows-iterate-over-regions" class="level2">
+<h2 class="anchored" data-anchor-id="do-certain-regions-have-higher-measles-incident-rates-per-1000000-people-on-average-columns-are-regions-average-incident-rate-on-rows-iterate-over-regions">Do certain regions have higher measles incident rates per 1,000,000 people, on average? (columns are regions, average incident rate on rows, iterate over regions)</h2>
 <p>Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <a href="https://quarto.org" class="uri">https://quarto.org</a>.</p>
 </section>
 <section id="running-code" class="level2">
 <h2 class="anchored" data-anchor-id="running-code">Running Code</h2>
 <p>When you click the <strong>Render</strong> button a document will be generated that includes both content and the output of embedded code. You can embed code like this:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 2</code></pre>
 </div>
