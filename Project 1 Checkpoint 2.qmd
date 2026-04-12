@@ -90,22 +90,18 @@ cases_year_prop_discarded$decrease <- map_int (seq_along(prop), function(x){
 
 ## Do certain regions have higher measles incident rates per 1,000,000 people, on average? (columns are regions, average incident rate on rows, iterate over regions)
 
+cleaned <- cases_year |> 
+  select(region, measles_incidence_rate_per_1000000_total_population)
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+region_avg <- data.frame(region = unique(cleaned$region),
+                         avg_incidence = NA)
 
-## Running Code
+for (i in 1:nrow(region_avg)) {
+  r <- region_avg$region[i]
+  region_avg$avg_incidence[i] <- 
+    mean(cleaned$measles_incidence_rate_per_1000000_total_population[cleaned$region == r], 
+         na.rm = TRUE)
+}
 
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+region_avg
 
-```{r}
-1 + 1
-```
-
-You can add options to executable code like this 
-
-```{r}
-#| echo: false
-2 * 2
-```
-
-The `echo: false` option disables the printing of code (only output is displayed).
