@@ -90,6 +90,7 @@ cases_year_prop_discarded$decrease <- map_int (seq_along(prop), function(x){
 
 ## Do certain regions have higher measles incident rates per 1,000,000 people, on average? (columns are regions, average incident rate on rows, iterate over regions)
 
+```{r}
 cleaned <- cases_year |> 
   select(region, measles_incidence_rate_per_1000000_total_population)
 
@@ -104,4 +105,7 @@ for (i in 1:nrow(region_avg)) {
 }
 
 region_avg
+```
+
+
 
