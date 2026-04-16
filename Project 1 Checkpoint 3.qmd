@@ -3,3 +3,36 @@ title: "Project 1 Checkpoint 3"
 format: html
 ---
 
+Description of csv: 
+
+Child immunization, measles, measures the percentage of children ages 12-23 months who received the measles vaccination before 12 months or at any time before the survey. A child is considered adequately immunized against measles after receiving one dose of vaccine.
+
+```{r}
+
+#Reading in Child Immunization of measles by country csv file 
+#data cleaning to start counting immunization rate in 1985 and end in 2024 (where majority of countries had actual data, and not NA)
+
+raw_child_vacc <- read.csv("ChildImmunizationMeasles.csv", skip = 4, header = TRUE, fill = TRUE, blank.lines.skip = TRUE)
+
+vars <- names(raw_child_vacc) 
+yrs <- which(substr(vars, 1, 1) == "X")
+vars[yrs] <- substr(vars[yrs], 2, nchar(vars[yrs]))
+names(raw_child_vacc) <- vars 
+
+head(raw_child_vacc)
+#cleaned data from csv 
+#USE THIS 
+child_vacc <- raw_child_vacc |>
+  select(Country.Name, Country.Code, `1985` : `2024`) |>
+  pivot_longer(cols = `1985`:`2024`,
+               names_to = "Year",
+               values_to = "VaccinationRate") |>
+  mutate(Year = as.integer(Year))
+
+head(child_vacc)
+```
+
+
+
+
+
