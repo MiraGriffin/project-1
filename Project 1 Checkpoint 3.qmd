@@ -78,7 +78,68 @@ cases_year_urban_pop <- left_join(cases_year, urban_df, by = "iso3")
 ```
 
 
+Summarizing mean incidence rate by urban population data
 
+```{r}
+
+library(dplyr)
+
+cases_year_urban_pop_df <- as.data.frame(cases_year_urban_pop)
+
+summarize_by_country <- cases_year_urban_pop_df |>
+  group_by(iso3) |>
+  summarize(
+    mean_urbn_pop = mean(urban_population),
+    mean = mean(measles_incidence_rate_per_1000000_total_population, na.rm = TRUE),
+    median = median(measles_incidence_rate_per_1000000_total_population, na.rm = TRUE),
+    sd = sd(measles_incidence_rate_per_1000000_total_population, na.rm = TRUE),
+    min = min(measles_incidence_rate_per_1000000_total_population, na.rm = TRUE),
+    max = max(measles_incidence_rate_per_1000000_total_population, na.rm = TRUE)
+    ) |>
+  arrange(desc(mean_urbn_pop))
+
+summarize_by_country
+```
+
+
+Summarizing mean incidence rate by income group data
+
+```{r}
+library(dplyr)
+
+names(ChildImmunizationIncomeGroup)
+
+ChildImmunizationIncomeGroup <- ChildImmunizationIncomeGroup |>
+  rename(iso3 = `Country Code`)
+
+df <- ChildImmunizationIncomeGroup |>
+  group_by(IncomeGroup) |>
+  select(iso3, IncomeGroup)
+df
+
+df2 <- cases_year_urban_pop_df |>
+  group_by(iso3) |>
+  select(iso3, measles_incidence_rate_per_1000000_total_population, year)
+df2
+
+final_df <- df2 |>
+  left_join(df, by = "iso3")
+
+final_df
+
+avg_measles_by_income <- final_df |>
+  group_by(IncomeGroup) |>
+  summarize(
+    mean = mean(measles_incidence_rate_per_1000000_total_population),
+    median = median(measles_incidence_rate_per_1000000_total_population),
+    sd = sd(measles_incidence_rate_per_1000000_total_population),
+    min = min(measles_incidence_rate_per_1000000_total_population),
+    max = max(measles_incidence_rate_per_1000000_total_population)
+    )
+
+avg_measles_by_income
+
+```
 
 
 
