@@ -20,6 +20,38 @@ cases_month <- readr::read_csv('https://raw.githubusercontent.com/rfordatascienc
 cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_year.csv')
 ```
 
+# Description of Child Immunization CSV
+Child immunization, measles, measures the percentage of children ages 12-23 months who received the measles vaccination before 12 months or at any time before the survey. A child is considered adequately immunized against measles after receiving one dose of vaccine.
+
+```{r}
+
+#Reading in Child Immunization of measles by country csv file 
+#data cleaning to start counting immunization rate in 1985 and end in 2024 (where majority of countries had actual data, and not NA)
+
+raw_child_vacc <- read.csv("ChildImmunizationMeasles.csv", skip = 4, header = TRUE, fill = TRUE, blank.lines.skip = TRUE)
+
+vars <- names(raw_child_vacc) 
+yrs <- which(substr(vars, 1, 1) == "X")
+vars[yrs] <- substr(vars[yrs], 2, nchar(vars[yrs]))
+names(raw_child_vacc) <- vars 
+
+head(raw_child_vacc)
+#cleaned data from csv 
+#USE THIS 
+child_vacc <- raw_child_vacc |>
+  select(Country.Name, Country.Code, `1985` : `2024`) |>
+  pivot_longer(cols = `1985`:`2024`,
+               names_to = "Year",
+               values_to = "VaccinationRate") |>
+  mutate(Year = as.integer(Year))
+
+head(child_vacc)
+```
+
+#Description of Urban Population API
+A country's urban population rate is represented as a percentage of a total population that lives in areas defined as urban. For the country's in our data set, we merged the API's information on urban population rate with our data on measles cases.
+
+#Getting API
 ```{r}
 #| eval: false
 
@@ -39,7 +71,7 @@ USA_urban <- USA |>
 
 ```
 
-Function for getting urban population for a country:
+#Function for getting urban population for a country:
 ```{r}
 get_urban_pop <- function(country) {
   base_url <- "https://api.api-ninjas.com/v1/country"
@@ -59,7 +91,7 @@ get_urban_pop("GBR")
 ```
 
 
-Applying Function to all countries in data frame:
+#Applying Function to all countries in data frame:
 ```{r}
 unique_countries <- cases_year |>
   select(iso3) |>
@@ -70,7 +102,7 @@ urban_pops <- map(unique_countries, get_urban_pop)
 write.csv(urban_pops, "Urban Population Percentage.csv")
 ```
 
-Combining data frames:
+#Combining data frames:
 ```{r}
 urban_df <- bind_rows(urban_pops)
 
@@ -79,7 +111,7 @@ cases_year_urban_pop <- left_join(cases_year, urban_df, by = "iso3")
 ```
 
 
-Summarizing mean incidence rate by urban population data
+#Summarizing mean incidence rate by urban population data
 
 ```{r}
 
@@ -103,7 +135,7 @@ summarize_by_country
 ```
 
 
-Summarizing mean incidence rate by income group data
+#Summarizing mean incidence rate by income group data
 
 ```{r}
 library(dplyr)
@@ -139,7 +171,7 @@ avg_measles_by_income
 
 ```
 
-Meta Data Set
+#Meta Data Set
 
 ```{r}
 
