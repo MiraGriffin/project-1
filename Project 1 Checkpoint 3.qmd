@@ -141,6 +141,14 @@ avg_measles_by_income
 
 ```
 
+Meta Data Set
+
+```{r}
+
+meta_data_set <- cases_year_urban_pop |>
+  left_join(ChildImmunizationIncomeGroup, by = "iso3")
+
+```
 
 
 
