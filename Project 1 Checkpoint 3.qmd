@@ -67,6 +67,7 @@ unique_countries <- cases_year |>
   pull()
 
 urban_pops <- map(unique_countries, get_urban_pop)
+write.csv(urban_pops, "Urban Population Percentage.csv")
 ```
 
 Combining data frames:
