@@ -140,7 +140,7 @@ summarize_by_country
 ```{r}
 library(dplyr)
 
-names(ChildImmunizationIncomeGroup)
+names(ChildImmunizationIncomeGroup)[1] <- "iso3"
 
 income_by_country <- ChildImmunizationIncomeGroup |>
   group_by(IncomeGroup) |>
