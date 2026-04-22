@@ -6,6 +6,9 @@ execute:
   error: true
 ---
 
+#Warning
+There is a restriction on our number of accesses to the API, and even creating a variable for accessing it, we still ran out of access tokens so we have all of our code and the html file, but we had to render it while allowing the error to happen.
+
 ```{r}
 #| label: packages-setup
 #| message: false
