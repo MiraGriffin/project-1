@@ -1,5 +1,48 @@
 ---
 title: "Project 1 Checkpoint 4-Mira"
 format: html
+embed-resources: true
+theme: lux
 ---
+## Do certain months of the year tend to have a higher amount of suspected measles cases, for different countries? (custom function/iteration)
+```{r}
+library(tidyverse)
+library(ggridges)
+
+cases_month <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_month.csv')
+cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_year.csv')
+```
+
+```{r}
+#| warning: false
+top_pop <- cases_year |>
+  group_by(region) |>
+  slice_max(order_by = total_population, n = 1, with_ties = FALSE)
+  
+top_pop_month <- left_join(top_pop, cases_month, by = "country")
+
+top_pop_month$month <- factor(top_pop_month$month, 
+                              levels = 1:12,
+                              labels = c("Jan", "Feb", "Mar","Apr",                                          "May","Jun", "Jul", "Aug",                                          "Sep", "Oct", "Nov",                                               "Dec"))
+
+ggplot(data = top_pop_month,
+       mapping = aes(x = measles_suspect,
+                     y = month,
+                     fill = country)) +
+  geom_density_ridges(alpha = 0.5) +
+  labs(x = "Number of Suspected Measles Cases", 
+       y = "Month", 
+       fill = "Country", 
+       title = "Monthly Distributions of Suspected Measles Cases Across Countries",
+       subtitle = "Data from 2012-2025") +
+  scale_x_continuous(breaks = seq(0, 30000, 5000)) +
+  scale_fill_brewer(palette = "Spectral") +
+  theme_light() +
+  theme(text = element_text(family = "Times", size = 12))
+  
+  
+  
+  
+
+```
 
