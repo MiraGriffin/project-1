@@ -1,0 +1,92 @@
+---
+title: "Project 1 Checkpoint 4"
+author: "Eloise Melendez"
+format: html
+execute: 
+  error: true
+theme: lux
+---
+
+
+```{r}
+#| echo: false
+#| include: false
+
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+
+
+cases_month <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_month.csv')
+cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_year.csv')
+```
+
+## Is the ratio of measles cases to rubella cases per year different depending on the country? (mutate)
+
+```{r}
+
+measles_prop_year <- cases_year |> 
+  group_by(country, year) |> 
+  mutate(prop_tot_measles_per_year =                                             ifelse(
+      measles_total + rubella_total == 0,
+      NA,
+      measles_total / (measles_total + rubella_total)
+    )) |>
+  select(region, country, year, prop_tot_measles_per_year)
+
+measles_prop_tot <- measles_prop_year |>
+  group_by(country) |>
+  summarize(avg_prop_tot_measles = 
+              ifelse(all(is.na(prop_tot_measles_per_year)),
+                     NA,
+                     mean(prop_tot_measles_per_year, 
+                          na.rm = TRUE)), .groups = "drop")
+measles_prop <- measles_prop_year |> left_join(measles_prop_tot,
+                                               by = "country")
+measles_prop
+
+```
+```{r}
+
+top_pop = cases_year |> 
+  group_by(region) |>
+  slice_max(order_by = total_population, n = 14, with_ties = FALSE)
+
+top_pop <- top_pop[-c(26, 27, 28, 69, 70), ]
+```
+
+
+```{r}
+measles_prop_year <- top_pop |>
+  group_by(country, year) |> 
+  mutate(prop_tot_measles_per_year =                                             ifelse(
+      measles_total + rubella_total == 0,
+      NA,
+      measles_total / (measles_total + rubella_total)
+    )) |>
+  select(region, country, year, prop_tot_measles_per_year)
+
+measles_prop_year
+
+measles_prop_tot <- measles_prop_year |>
+  group_by(country) |>
+  summarize(avg_prop_tot_measles = 
+              ifelse(all(is.na(prop_tot_measles_per_year)),
+                     NA,
+                     mean(prop_tot_measles_per_year, 
+                          na.rm = TRUE)), .groups = "drop")
+measles_prop <- measles_prop_year |> left_join(measles_prop_tot,
+                                               by = "country")
+measles_prop
+
+```
+
+```{r}
+ggplot(
+  measles_prop, aes(x = )
+)
+```
+
+
+
+
