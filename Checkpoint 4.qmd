@@ -7,8 +7,6 @@ code-fold: true
 theme: lux
 ---
 
-
-
 ## Do certain months of the year tend to have a higher amount of suspected measles cases, for different countries? 
 
 ```{r} 
