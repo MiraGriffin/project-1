@@ -1,0 +1,34 @@
+---
+title: "Final Deliverable"
+format: html
+embed-resources: true
+code-fold: true
+theme: minty
+---
+
+# Data Context
+## Measles and Rubella Data Sets
+
+In May of 2025, the United States' total number of measles cases reached the second highest case count in 25 years according to the Centers for Disease Control and Prevention. In order to explore measles and rubella cases across the world, Jen Richmond curated these datasets
+  
+  
+The data came from the World Health Organization's Provisional monthly measles and rubella data on June 12, 2025. Both data set contains information on number of suspected, clinical, confirmed and total cases of both measles and rubella per year for countries around the world. One data set also includes all of this information for the months of each year included in the first data set.
+
+## Urban Population Rate Data Set
+This data set was created by combining the measles and rubella data set contain only information for cases per year and an API containing information on countries' urban population rates.
+
+
+The API came from API ninjas, an API provider who gets their data from a network of vetted sources and vendors. The original API contains a multitude of demographic and geographic information on countries around the world, but for our purposes we chose to focus on urban population rate.
+
+# Research Questions
+Do certain months of the year tend to have a higher amount of suspected measles cases, for different countries?
+
+
+Is the incident rate of measles cases associated with a country's urban population rate?
+
+
+
+
+
+
+
