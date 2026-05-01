@@ -5,6 +5,16 @@ embed-resources: true
 code-fold: true
 theme: minty
 ---
+```{r}
+#| include: false
+library(tidyverse)
+library(ggridges)
+library(gt)
+
+
+cases_month <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_month.csv')
+cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_year.csv')
+```
 
 # Data Context
 ## Measles and Rubella Data Sets
@@ -26,8 +36,99 @@ Do certain months of the year tend to have a higher amount of suspected measles 
 
 Is the incident rate of measles cases associated with a country's urban population rate?
 
+# Data Summaries & Visualizations
+
+```{r}
+top_pop <- cases_year |>
+  group_by(region) |>
+  slice_max(order_by = total_population, n = 1, with_ties = FALSE)
+ 
+top_pop_month <- left_join(top_pop, cases_month, by = "country")
+
+summ_sus_measles_per_month <- function(country_name){
+  country_data <- top_pop_month |>
+    filter(country == country_name)
+ 
+  summ_sus_measles <- tibble()
+ 
+  for(mon in 1:12) {
+    mon_data <- country_data |>
+      filter(month == mon)
+   
+    summ_sus_measles <- bind_rows(summ_sus_measles, tibble(
+      country = country_name,
+      month = month.name[mon],
+      mean = mean(mon_data$measles_suspect, na.rm = TRUE),
+      SD = sd(mon_data$measles_suspect, na.rm = TRUE)
+    ))
+  }
+ 
+  return(summ_sus_measles)
+}
+
+#summ_sus_measles_per_month("Nigeria") 
+#summ_sus_measles_per_month("UnitedStatesofAmerica")
+#summ_sus_measles_per_month("Pakistan")
+#summ_sus_measles_per_month("RussianFederation")
+#summ_sus_measles_per_month("India")
+china_sum <- summ_sus_measles_per_month("China")
+
+china_sum |>
+  select(-country) |>
+  gt() |>
+  fmt_number(columns = c(mean, SD), 
+             decimals = 2) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+    ) |>
+  tab_header(
+    title = md("Summary of Suspected Measles Cases per Month for China") 
+  ) |>
+  tab_caption(
+    caption = md("Table 1")
+  ) |>
+  cols_label(month = "Month", 
+             mean = "Mean",
+             SD = "Standard Deviation") |>
+  tab_spanner(
+    label = "Summary Statistics",
+    columns = c(mean, SD)
+  )
+
+```
+This is just one table that summarizes the average number of suspected measles's cases per month for China. This allows us to see that some months seem to have a much higher amount of suspected measles cases than others. To see if other countries also have differing amounts of suspected measles cases, we can look at Figure 1:
+
+```{r}
+#| warning: false
+#| label: Fig 1
+top_pop <- cases_year |>
+  group_by(region) |>
+  slice_max(order_by = total_population, n = 1, with_ties = FALSE)
+ 
+top_pop_month <- left_join(top_pop, cases_month, by = "country")
+
+top_pop_month$month <- factor(top_pop_month$month,
+                              levels = 1:12,
+                              labels = c("Jan", "Feb", "Mar","Apr",                                          "May","Jun", "Jul", "Aug",                                          "Sep", "Oct", "Nov", "Dec"))
+
+ggplot(data = top_pop_month,
+       mapping = aes(x = measles_suspect,
+                     y = month,
+                     fill = country)) +
+  geom_density_ridges(alpha = 0.5) +
+  labs(x = "Number of Suspected Measles Cases",
+       y = "Month",
+       fill = "Country",
+       title = " Fig. 1: Monthly Distributions of Suspected Measles Cases Across Countries",
+       subtitle = "Data from 2012-2025") +
+  scale_x_continuous(breaks = seq(0, 30000, 5000)) +
+  scale_fill_brewer(palette = "Spectral") +
+  theme_light() +
+  theme(text = element_text(family = "Times", size = 12))
 
 
+```
 
 
 
