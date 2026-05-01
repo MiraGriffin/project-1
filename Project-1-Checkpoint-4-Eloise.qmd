@@ -82,9 +82,24 @@ measles_prop
 ```
 
 ```{r}
-ggplot(
-  measles_prop, aes(x = )
-)
+ggplot(data = measles_prop,
+       mapping = aes(x = year,
+                     y = prop_tot_measles_per_year,
+                     color = country)) +
+  geom_point() +
+  theme_light() + 
+  scale_color_manual(
+    values = c(
+      "navy",
+      "green",
+      "purple",
+      "lightpink",
+      "yellow",
+      "red"
+    )) +
+  ggtitle("Ratio of Measles Cases out of Measles and Rubella Cases in Countries from Each Region with the Highest Population"
+  ) +
+  labs(x = "Year", y = "Proportion of Measles Cases")
 ```
 
 
