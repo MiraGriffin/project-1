@@ -24,7 +24,7 @@ cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience
 
 get_urban_pop <- function(country) {
   base_url <- "https://api.api-ninjas.com/v1/country"
-  my_key <- "VnekqWQV2FksGKpxWKSDlsPMq9yNJVXNoemv2Ycd"
+  my_key <- "kaWqmUxI7Yg3toQOjvhrc9BThDMCDfiTQbfiT4Wp"
   my_url <- glue("{base_url}?name={country};X-Api-Key={my_key}")
   country_data <- fromJSON(my_url)
   
@@ -234,6 +234,20 @@ urban_pop_type_df |>
 So, for the specific countries we had looked at before, we wanted to see how their measles incident rates compared to the mean incident rates for their urban classification.
 
 ```{r}
+#| warning: false
+urban_pop_type_df2 <- urban_pop_type_df |>
+  group_by(urban_type) |>
+  summarise(mean_by_type = mean(
+    measles_incidence_rate_per_1000000_total_population, 
+    na.rm = T),
+    sd_by_type = sd(
+      measles_incidence_rate_per_1000000_total_population,
+      na.rm = T))  
+
+urban_pop_type_df <- urban_pop_type_df |>
+  left_join(urban_pop_type_df2, by = "urban_type") |>
+  filter(iso3 == unique(top_pop_month$iso3.x))
+
 ggplot(data = urban_pop_type_df,
        mapping = aes(x = iso3, 
                      y = mean_incident,
@@ -271,4 +285,97 @@ ggplot(data = urban_pop_type_df,
   theme_grey() +
   theme(text = element_text(family = "Times", size = 12))
 ```
+## Multiple Linear Regression Model for Measles Proportion by Country and Year
+```{r}
+#| include: false
 
+cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_year.csv')
+
+measles_prop_year <- cases_year |>
+  group_by(country, year) |>
+  mutate(prop_tot_measles_per_year =
+    measles_total / (measles_total + rubella_total)
+  ) |>
+  select(country, year, prop_tot_measles_per_year) |>
+  ungroup()
+
+
+measles_prop_month <- cases_month |>
+  group_by(iso3, country, month) |>
+  mutate(prop_tot_measles_per_month =
+    measles_total / (measles_total + rubella_total)) |>
+  filter(
+    is.finite(prop_tot_measles_per_month),
+    !is.na(prop_tot_measles_per_month)) |>
+  select(country, iso3, month, prop_tot_measles_per_month) |>
+  ungroup()
+```
+
+```{r}
+#| warning: false
+merged <- left_join(
+  measles_prop_month, urban_pop_type_df, by = "iso3")
+```
+
+
+```{r}
+#| include: false
+measles_model <- lm(prop_tot_measles_per_month ~
+                      urban_population,
+                    data = merged)
+summary(measles_model)
+
+```
+
+```{r}
+#| include: false
+
+model_df <- as.data.frame(
+  summary(measles_model)$coefficients, check.names = FALSE) |>
+  rownames_to_column("term") |>
+  filter (term != "Intercept") |>
+  arrange(desc(abs(Estimate))) |>
+  mutate(
+    term = gsub("country", "", term),
+    Estimate = round(Estimate, 3),
+    `Std. Error` = round (`Std. Error`, 3),
+    `t value` = round (`t value`, 2),
+    `p value` = round (`Pr(>|t|)`, 3)) |>
+  select(c("term","Estimate", "Std. Error", "t value", "p value"))
+model_df
+```
+
+```{r}
+
+model_table <- model_df |>
+  gt() |>
+  tab_header(
+    title = md("Multiple Linear Regression Model for Measles Proportion by Country and Year")
+  ) |>
+  tab_caption(
+    caption = md("Estimates of differences in measles proportion (relative to the reference country), in descending order")) |>
+ 
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+  ) |>
+  fmt_percent( columns = Estimate) |>
+  cols_label(
+    term = "Country",
+    Estimate = "Estimate",
+    `Std. Error` = "Std Error",
+    `t value` = "t-value",
+    `p value` = "p-value"
+  ) |>
+  fmt_number(columns = -c(term, Estimate),
+             decimals = 4
+  )
+ 
+model_table 
+
+```
+
+This model is statistically significant, and it can be concluded that the urban population effect differs in the proportion of measles to rubella cases per month.
+(F = 2776, df = 1429663, p value = 2.2e-16).
+Urban population was a significant predictor in proportion of measles cases per month.
+(estimate = -0.0007324, p value = <2e-16)
