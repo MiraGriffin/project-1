@@ -231,5 +231,44 @@ urban_pop_type_df |>
   )
 ```
 
+So, for the specific countries we had looked at before, we wanted to see how their measles incident rates compared to the mean incident rates for their urban classification.
 
+```{r}
+ggplot(data = urban_pop_type_df,
+       mapping = aes(x = iso3, 
+                     y = mean_incident,
+                     color = urban_type)) +
+  geom_segment(aes(yend = mean_incident, 
+                   x = iso3, 
+                   y = 0,
+                   xend = iso3), 
+               color = "gray50") +
+  geom_point(size = 4) +
+  labs(y = "Mean Measles Incident Rate",
+       x = "",
+       title = "Fig 2: Mean Measles Incident Rate by Country",
+       subtitle = "Data from 2012-2025",
+       color = "Urban Classification") +
+  geom_hline(yintercept = 15.8, color = "#FC8D59")  + 
+  annotate("text",
+           x = 1.15,
+           y = 16,
+           label = "Mean Incident Rate \n for Highly Urbanized",
+           size = 2) +
+  geom_hline(yintercept = 59.6, color = "#FFFFBF") + 
+  annotate("text",
+           x = 1.15,
+           y = 60.1,
+           label = "Mean Incident Rate \n for Mixed",
+           size = 2) +
+  geom_hline(yintercept = 68.7, color = "#99D594") + 
+  annotate("text",
+           x = 1.15,
+           y = 68.9,
+           label = "Mean Incident Rate \n for Primarily Rural",
+           size = 2) +
+  scale_color_brewer(palette = "Spectral") +
+  theme_grey() +
+  theme(text = element_text(family = "Times", size = 12))
+```
 
