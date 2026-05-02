@@ -7,13 +7,49 @@ theme: minty
 ---
 ```{r}
 #| include: false
+#| error: false
 library(tidyverse)
 library(ggridges)
 library(gt)
+library(purrr)
+library(glue)
+library(httr)
+library(tidyjson)
+library(jsonlite)
+library(tidyverse)
 
 
 cases_month <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_month.csv')
 cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_year.csv')
+
+get_urban_pop <- function(country) {
+  base_url <- "https://api.api-ninjas.com/v1/country"
+  my_key <- "VnekqWQV2FksGKpxWKSDlsPMq9yNJVXNoemv2Ycd"
+  my_url <- glue("{base_url}?name={country};X-Api-Key={my_key}")
+  country_data <- fromJSON(my_url)
+  
+  country_urban_pop <- country_data |>
+  select(urban_population) |>
+  mutate(iso3 = country)
+  
+  return(country_urban_pop)
+}
+
+unique_countries <- cases_year |>
+  select(iso3) |>
+  distinct() |>
+  pull()
+
+urban_pops <- purrr::map(unique_countries, get_urban_pop)
+write.csv(urban_pops, "Urban Population Percentage.csv")
+
+urban_df <- bind_rows(urban_pops)
+
+
+cases_year_urban_pop <- left_join(cases_year, urban_df, by = "iso3")
+
+cases_year_urban_pop_df <- as.data.frame(cases_year_urban_pop)
+
 ```
 
 # Data Context
@@ -94,7 +130,13 @@ china_sum |>
   tab_spanner(
     label = "Summary Statistics",
     columns = c(mean, SD)
+  ) |>   
+  data_color(
+    method = "numeric",
+    palette = "Spectral", 
+    reverse = TRUE
   )
+  
 
 ```
 This is just one table that summarizes the average number of suspected measles's cases per month for China. This allows us to see that some months seem to have a much higher amount of suspected measles cases than others. To see if other countries also have differing amounts of suspected measles cases, we can look at Figure 1:
@@ -130,6 +172,64 @@ ggplot(data = top_pop_month,
 
 ```
 
+```{r}
+#| warning: false
+#| error: false
+urban_type_incident <- function(country_iso3) {
+
+  cases_year_urban_pop_df |>
+    filter(iso3 == country_iso3) |>
+    mutate(urban_type = ifelse(
+      urban_population > 80,
+      "Highly Urbanized",
+      ifelse(urban_population > 50, 
+             "Mixed", 
+             "Primarily Rural"))
+      ) |>
+    summarise(iso3 = country_iso3,
+              urban_type = first(urban_type),
+              mean_incident = 
+                mean(measles_incidence_rate_per_1000000_total_population)
+              )
+
+}
+
+urban_type_df <- map_dfr(cases_year_urban_pop_df$iso3, urban_type_incident)
+
+
+urban_pop_type_df <- cases_year_urban_pop_df |>
+  left_join(urban_type_df, by = "iso3") |>
+  select(c(iso3, urban_population, urban_type, 
+           measles_incidence_rate_per_1000000_total_population,
+           mean_incident))
+
+urban_pop_type_df |>
+  group_by(urban_type) |>
+  summarise(mean_by_type = mean(
+    measles_incidence_rate_per_1000000_total_population),
+    sd_by_type = sd(
+      measles_incidence_rate_per_1000000_total_population)) |>
+  gt() |>
+  fmt_number(columns = c(mean_by_type, sd_by_type), 
+             decimals = 2) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+    ) |>
+  tab_header(
+    title = md("Summary of Mean Measle's Incident Rate by Rural-Urban Classification") 
+  ) |>
+  tab_caption(
+    caption = md("Table 2")
+  ) |>
+  cols_label(urban_type = "Classification", 
+             mean_by_type = "Mean",
+             sd_by_type = "Standard Deviation") |>
+  tab_spanner(
+    label = "Summary Statistics",
+    columns = c(mean_by_type, sd_by_type)
+  )
+```
 
 
 
