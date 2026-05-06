@@ -1,5 +1,5 @@
 ---
-title: "Final Deliverable"
+title: "Global Patterns of Measles Incedece: Associations with Seasonal Trends and Urban Population Rates"
 format: html
 embed-resources: true
 code-fold: true
@@ -52,28 +52,17 @@ cases_year_urban_pop_df <- as.data.frame(cases_year_urban_pop)
 
 ```
 
-# Data Context
-## Measles and Rubella Data Sets
+# Why Measles and Why Now?
 
-In May of 2025, the United States' total number of measles cases reached the second highest case count in 25 years according to the Centers for Disease Control and Prevention. In order to explore measles and rubella cases across the world, Jen Richmond curated these datasets
+In May of 2025, the United States' total number of measles cases reached the second highest case count in 25 years according to the Centers for Disease Control and Prevention. Jen Richmond curated two of the data sets we used in order to look at the global trends of measles and rubella cases since 2012.
   
-  
-The data came from the World Health Organization's Provisional monthly measles and rubella data on June 12, 2025. Both data set contains information on number of suspected, clinical, confirmed and total cases of both measles and rubella per year for countries around the world. One data set also includes all of this information for the months of each year included in the first data set.
+# Global Measles and Rubella Data
 
-## Urban Population Rate Data Set
-This data set was created by combining the measles and rubella data set contain only information for cases per year and an API containing information on countries' urban population rates.
+The data set created by Richmond came from the World Health Organization's Provisional monthly measles and rubella data on June 12, 2025. Both data set contains information on number of suspected, clinical, confirmed and total cases of both measles and rubella per year for countries around the world. One data set also includes all of this information for the months of each year included in the first data set. Looking at this data led us to our first research question, do certain months of the year tend to have a higher amount of suspected measles cases, for different countries?
 
+# Association Between Months of the Year and Suspected Measles Cases
 
-The API came from API ninjas, an API provider who gets their data from a network of vetted sources and vendors. The original API contains a multitude of demographic and geographic information on countries around the world, but for our purposes we chose to focus on urban population rate.
-
-# Research Questions
-Do certain months of the year tend to have a higher amount of suspected measles cases, for different countries?
-
-
-Is the incident rate of measles cases associated with a country's urban population rate?
-
-# Data Summaries & Visualizations
-
+In order to see if there is an association between months of the year and suspected measles cases, we decided to start by looking at one country at a time. We created a table looking at the mean amount of suspected measles cases per month for China, from 2012 to 2025. The table also includes a column showing how far away a typical month's number of suspected measles cases tends to differ from the mean.
 ```{r}
 top_pop <- cases_year |>
   group_by(region) |>
@@ -139,7 +128,8 @@ china_sum |>
   
 
 ```
-This is just one table that summarizes the average number of suspected measles's cases per month for China. This allows us to see that some months seem to have a much higher amount of suspected measles cases than others. To see if other countries also have differing amounts of suspected measles cases, we can look at Figure 1:
+
+The information in Table 1 only summarizes the average number of suspected measles's cases per month for one country, China. This allows us to see that some months seem to have a much higher amount of suspected measles cases than others. To see if other countries also have differing amounts of suspected measles cases, we can look at Figure 1:
 
 ```{r}
 #| warning: false
@@ -171,6 +161,21 @@ ggplot(data = top_pop_month,
 
 
 ```
+
+The graph in Figure 1 lets us see data for the 6 countries with the highest population from our data. As seen by the varying curves for each month, these countries each have different amounts of suspected measles cases for different months.
+
+# Is Measles Associated with Only Months?
+
+After investigating the association between months of the year and suspected measles cases, we wondered if there was anything else that could effect the incident rate of measles. As measles is known to be more prevalent in developing countries, we thought that it could be possible that the urban population rate of a country could be associated with its measles incident rate.
+
+# Urban Population Rate Data 
+
+In order to investigate this association, we needed to bring in more data. We came across an API from API ninjas, an API provider who gets their data from a network of vetted sources and vendors. The original API contains a multitude of demographic and geographic information on countries around the world, but for our purposes we chose to focus on urban population rate. We combined our previous measles and rubella data set containing only information for cases per year and an API containing information on countries' urban population rates. With this new data set, we were able to analyze our second curiosity: is the incident rate of measles cases associated with a country's urban population rate?
+
+
+# Rural-Urban Classification and Measles Incident Rate
+
+We began by classifying each country as either highly urbanized, mixed, or primarily rural. Then, we were able to create a table showing the average incident rate of measles per classification, as well as how much a specific country's measles incident rate tended to differ from this average.
 
 ```{r}
 #| warning: false
@@ -231,7 +236,7 @@ urban_pop_type_df |>
   )
 ```
 
-So, for the specific countries we had looked at before, we wanted to see how their measles incident rates compared to the mean incident rates for their urban classification.
+Table 2 allowed us to see that the average incident rate for mixed and primarily urban countries was quite a bit higher than that for highly urbanized countries. So, for the specific countries we had looked at before, we wanted to see how their measles incident rates compared to the mean incident rates for their urban classification.
 
 ```{r}
 #| warning: false
@@ -285,7 +290,10 @@ ggplot(data = urban_pop_type_df,
   theme_grey() +
   theme(text = element_text(family = "Times", size = 12))
 ```
-## Multiple Linear Regression Model for Measles Proportion by Country and Year
+
+# Combining Months and Urban Population Rate
+
+After analyzing the association between measles, months, and urban population rates separately, we wanted to see how they months and urban population rates affect measles together. So, we created a linear model that estimates the proportion of total measles cases per month based on urban population rate, as shown in Table 3.
 ```{r}
 #| include: false
 
@@ -353,7 +361,7 @@ model_table <- model_df |>
     title = md("Multiple Linear Regression Model for Measles Proportion by Country and Year")
   ) |>
   tab_caption(
-    caption = md("Estimates of differences in measles proportion (relative to the reference country), in descending order")) |>
+    caption = md("Table 3: Estimates of differences in measles proportion (relative to the reference country), in descending order")) |>
  
   tab_style(
     style = cell_text(weight = "bold"),
@@ -369,13 +377,21 @@ model_table <- model_df |>
   ) |>
   fmt_number(columns = -c(term, Estimate),
              decimals = 4
+  ) |>
+  text_transform(
+    locations = cells_body(columns = term),
+    fn = function(x) {
+      dplyr::recode(
+        x,
+        "(Intercept)" = "Baseline",
+        "urban_population" = "Urban Population Rate"
+      )
+    }
   )
  
 model_table 
 
 ```
 
-This model is statistically significant, and it can be concluded that the urban population effect differs in the proportion of measles to rubella cases per month.
-(F = 2776, df = 1429663, p value = 2.2e-16).
-Urban population was a significant predictor in proportion of measles cases per month.
-(estimate = -0.0007324, p value = <2e-16)
+As seen by the very small p-values, we can see that urban population rate is a significant predictor of proportion of total measles cases per month. It is expected that with each one percent increase in urban population rate, the proportion of total measles cases will decrease by 0.7%. Thus, we can see that urban population rates and months of the year can both be important aspects of investigating measles incidents around the world.
+
