@@ -62,7 +62,7 @@ A country's urban population rate is represented as a percentage of a total popu
 
 base_url <- "https://api.api-ninjas.com/v1/country"
 
-my_key <- "Y1uFEyHRSSkY4CU7PAkQfmHI8VsM3mvv75xLtbM4"
+my_key <- "VnekqWQV2FksGKpxWKSDlsPMq9yNJVXNoemv2Ycd"
 
 country = "USA"
 
@@ -80,7 +80,7 @@ USA_urban <- USA |>
 ```{r}
 get_urban_pop <- function(country) {
   base_url <- "https://api.api-ninjas.com/v1/country"
-  my_key <- "Y1uFEyHRSSkY4CU7PAkQfmHI8VsM3mvv75xLtbM4"
+  my_key <- "VnekqWQV2FksGKpxWKSDlsPMq9yNJVXNoemv2Ycd"
   my_url <- glue("{base_url}?name={country};X-Api-Key={my_key}")
   country_data <- fromJSON(my_url)
   

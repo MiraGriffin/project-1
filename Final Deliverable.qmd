@@ -1,5 +1,200 @@
 ---
 title: "Final Deliverable"
 format: html
+embed-resources: true
+code-fold: true
+theme: minty
 ---
+```{r}
+#| include: false
+library(tidyverse)
+library(ggridges)
+library(gt)
+library(purrr)
+
+
+cases_month <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_month.csv')
+cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_year.csv')
+
+```
+
+# Data Context
+## Measles and Rubella Data Sets
+
+In May of 2025, the United States' total number of measles cases reached the second highest case count in 25 years according to the Centers for Disease Control and Prevention. In order to explore measles and rubella cases across the world, Jen Richmond curated these datasets
+  
+  
+The data came from the World Health Organization's Provisional monthly measles and rubella data on June 12, 2025. Both data set contains information on number of suspected, clinical, confirmed and total cases of both measles and rubella per year for countries around the world. One data set also includes all of this information for the months of each year included in the first data set.
+
+## Urban Population Rate Data Set
+This data set was created by combining the measles and rubella data set contain only information for cases per year and an API containing information on countries' urban population rates.
+
+
+The API came from API ninjas, an API provider who gets their data from a network of vetted sources and vendors. The original API contains a multitude of demographic and geographic information on countries around the world, but for our purposes we chose to focus on urban population rate.
+
+# Research Questions
+Do certain months of the year tend to have a higher amount of suspected measles cases, for different countries?
+
+
+Is the incident rate of measles cases associated with a country's urban population rate?
+
+# Data Summaries & Visualizations
+
+```{r}
+top_pop <- cases_year |>
+  group_by(region) |>
+  slice_max(order_by = total_population, n = 1, with_ties = FALSE)
+ 
+top_pop_month <- left_join(top_pop, cases_month, by = "country")
+
+summ_sus_measles_per_month <- function(country_name){
+  country_data <- top_pop_month |>
+    filter(country == country_name)
+ 
+  summ_sus_measles <- tibble()
+ 
+  for(mon in 1:12) {
+    mon_data <- country_data |>
+      filter(month == mon)
+   
+    summ_sus_measles <- bind_rows(summ_sus_measles, tibble(
+      country = country_name,
+      month = month.name[mon],
+      mean = mean(mon_data$measles_suspect, na.rm = TRUE),
+      SD = sd(mon_data$measles_suspect, na.rm = TRUE)
+    ))
+  }
+ 
+  return(summ_sus_measles)
+}
+
+#summ_sus_measles_per_month("Nigeria") 
+#summ_sus_measles_per_month("UnitedStatesofAmerica")
+#summ_sus_measles_per_month("Pakistan")
+#summ_sus_measles_per_month("RussianFederation")
+#summ_sus_measles_per_month("India")
+china_sum <- summ_sus_measles_per_month("China")
+
+china_sum |>
+  select(-country) |>
+  gt() |>
+  fmt_number(columns = c(mean, SD), 
+             decimals = 2) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+    ) |>
+  tab_header(
+    title = md("Summary of Suspected Measles Cases per Month for China") 
+  ) |>
+  tab_caption(
+    caption = md("Table 1")
+  ) |>
+  cols_label(month = "Month", 
+             mean = "Mean",
+             SD = "Standard Deviation") |>
+  tab_spanner(
+    label = "Summary Statistics",
+    columns = c(mean, SD)
+  ) |>   
+  data_color(
+    method = "numeric",
+    palette = "Spectral", 
+    reverse = TRUE
+  )
+  
+
+```
+This is just one table that summarizes the average number of suspected measles's cases per month for China. This allows us to see that some months seem to have a much higher amount of suspected measles cases than others. To see if other countries also have differing amounts of suspected measles cases, we can look at Figure 1:
+
+```{r}
+#| warning: false
+#| label: Fig 1
+top_pop <- cases_year |>
+  group_by(region) |>
+  slice_max(order_by = total_population, n = 1, with_ties = FALSE)
+ 
+top_pop_month <- left_join(top_pop, cases_month, by = "country")
+
+top_pop_month$month <- factor(top_pop_month$month,
+                              levels = 1:12,
+                              labels = c("Jan", "Feb", "Mar","Apr",                                          "May","Jun", "Jul", "Aug",                                          "Sep", "Oct", "Nov", "Dec"))
+
+ggplot(data = top_pop_month,
+       mapping = aes(x = measles_suspect,
+                     y = month,
+                     fill = country)) +
+  geom_density_ridges(alpha = 0.5) +
+  labs(x = "Number of Suspected Measles Cases",
+       y = "Month",
+       fill = "Country",
+       title = " Fig. 1: Monthly Distributions of Suspected Measles Cases Across Countries",
+       subtitle = "Data from 2012-2025") +
+  scale_x_continuous(breaks = seq(0, 30000, 5000)) +
+  scale_fill_brewer(palette = "Spectral") +
+  theme_light() +
+  theme(text = element_text(family = "Times", size = 12))
+
+
+```
+
+```{r}
+#| warning: false
+urban_type_incident <- function(country_iso3) {
+
+  cases_year_urban_pop_df |>
+    filter(iso3 == country_iso3) |>
+    mutate(urban_type = ifelse(
+      urban_population > 80,
+      "Highly Urbanized",
+      ifelse(urban_population > 50, 
+             "Mixed", 
+             "Primarily Rural"))
+      ) |>
+    summarise(iso3 = country_iso3,
+              urban_type = first(urban_type),
+              mean_incident = 
+                mean(measles_incidence_rate_per_1000000_total_population)
+              )
+
+}
+
+urban_type_df <- map_dfr(cases_year_urban_pop_df$iso3, urban_type_incident)
+
+
+urban_pop_type_df <- cases_year_urban_pop_df |>
+  left_join(urban_type_df, by = "iso3") |>
+  select(c(iso3, urban_population, urban_type, 
+           measles_incidence_rate_per_1000000_total_population,
+           mean_incident))
+
+urban_pop_type_df |>
+  group_by(urban_type) |>
+  summarise(mean_by_type = mean(
+    measles_incidence_rate_per_1000000_total_population),
+    sd_by_type = sd(
+      measles_incidence_rate_per_1000000_total_population)) |>
+  gt() |>
+  fmt_number(columns = c(mean_by_type, sd_by_type), 
+             decimals = 2) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+    ) |>
+  tab_header(
+    title = md("Summary of Mean Measle's Incident Rate by Rural-Urban Classification") 
+  ) |>
+  tab_caption(
+    caption = md("Table 2")
+  ) |>
+  cols_label(urban_type = "Classification", 
+             mean_by_type = "Mean",
+             sd_by_type = "Standard Deviation") |>
+  tab_spanner(
+    label = "Summary Statistics",
+    columns = c(mean_by_type, sd_by_type)
+  )
+```
+
+
 
