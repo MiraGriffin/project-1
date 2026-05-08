@@ -37,7 +37,7 @@ cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience
 
 get_urban_pop <- function(country) {
   base_url <- "https://api.api-ninjas.com/v1/country"
-  my_key <- "VnekqWQV2FksGKpxWKSDlsPMq9yNJVXNoemv2Ycd"
+  my_key <- "JFIU1ROdejIn63ZILGrRvbZ7MDUY1eRVmCDSKh1I"
   my_url <- glue("{base_url}?name={country};X-Api-Key={my_key}")
   country_data <- fromJSON(my_url)
   
