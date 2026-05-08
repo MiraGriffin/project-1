@@ -254,6 +254,7 @@ model_df <- as.data.frame(
 model_df
 ```
 
+
 ```{r}
 
 model_table <- model_df |>
@@ -291,10 +292,11 @@ model_table
 
 ## incorporate data 
 
-### read in data {height=60%}
+### {height=60%}
 
 ```{r}
-
+#| include: false
+#| height: 600
 library(ggplot2)
 library(sf)
 library(tidyverse)
@@ -325,9 +327,12 @@ map_all <- us_map |>
 state_points <- st_centroid(map_all)
 ```
 
+## UNITED STATES POPULATION ANALYSIS AND VISUALIZATIONS
+
 ### explain why we are using the us {height=40%}
-::: {card title = "Why the US?"} 
-We chose to investigate population and measles incidince rate by state in the United States becuase our original data set was created following an outbreak of Measles in the US. We want to explore the relationship between population and measles cases in each state. 
+
+::: {.card title = “Why the US?”} 
+We chose to investigate population and measles incidince rate by state in the United States becuase our original data set was created following an outbreak of Measles in the US. We want to explore the relationship between population and measles cases in each state.
 :::
 
 
@@ -335,8 +340,8 @@ We chose to investigate population and measles incidince rate by state in the Un
 
 ### interactive plot and leaflet plot
 
-::: panel-tabset
-2024 Urban Pop. per State Map
+::: {.panel-tabset}
+#### 2024 Urban Pop. per State Map
 
 ```{r}
 colorstate <- colorNumeric(
@@ -353,7 +358,7 @@ leaflet(map_all) |>
  ) |>
  addCircleMarkers(
    data = state_points,
-   radius = ~sqrt(X2024) * 2,
+   radius = ~sqrt(as.numeric(X2024)) * 2,
    color = "red",
    fillOpacity = 0.6,
    stroke = FALSE,
@@ -373,6 +378,7 @@ Measles Cases by State 2024-2026
 ```{r}
 
 uspops <- uspops |>
+  mutate(X2024 = as.numeric(X2024)) |>
   rename(
     "2024" = X2024,
     "2025" = X2025,
