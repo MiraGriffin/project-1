@@ -1,0 +1,380 @@
+---
+title: "Measles Analysis"
+author: "Mira Griffin, Eloise Melendez, Chloe Schurter"
+format: 
+  dashboard:
+    orientation: columns
+    theme: lux
+embed-resources: true
+logo: measles_by_country.ppm
+logo-alt: "World Map colored by measles cases."
+nav-buttons: 
+- icon: instagram
+  href: https://www.instagram.com/eloisemelendez_/
+- icon: linkedin
+  href: https://www.linkedin.com/in/mira-griffin-31009b382/
+- icon: envelope
+  href: mailto:cbschurt@calpoly.edu
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+#| error: false
+library(tidyverse)
+library(ggridges)
+library(gt)
+library(purrr)
+library(glue)
+library(httr)
+library(tidyjson)
+library(jsonlite)
+library(tidyverse)
+
+
+cases_month <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_month.csv')
+cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_year.csv')
+
+get_urban_pop <- function(country) {
+  base_url <- "https://api.api-ninjas.com/v1/country"
+  my_key <- "kaWqmUxI7Yg3toQOjvhrc9BThDMCDfiTQbfiT4Wp"
+  my_url <- glue("{base_url}?name={country};X-Api-Key={my_key}")
+  country_data <- fromJSON(my_url)
+  
+  country_urban_pop <- country_data |>
+  select(urban_population) |>
+  mutate(iso3 = country)
+  
+  return(country_urban_pop)
+}
+
+unique_countries <- cases_year |>
+  select(iso3) |>
+  distinct() |>
+  pull()
+
+urban_pops <- purrr::map(unique_countries, get_urban_pop)
+write.csv(urban_pops, "Urban Population Percentage.csv")
+
+urban_df <- bind_rows(urban_pops)
+
+
+cases_year_urban_pop <- left_join(cases_year, urban_df, by = "iso3")
+
+cases_year_urban_pop_df <- as.data.frame(cases_year_urban_pop)
+
+```
+
+## Measles Cases by Month and Country
+
+### month country data {height="60%"}
+
+::: panel-tabset
+# Countries with Highest Pop. by Region
+
+Monthly Distributions of Suspected Measles Cases by Country
+
+```{r}
+#| warning: false
+#| label: Fig 1
+top_pop <- cases_year |>
+  group_by(region) |>
+  slice_max(order_by = total_population, n = 1, with_ties = FALSE)
+ 
+top_pop_month <- left_join(top_pop, cases_month, by = "country")
+
+top_pop_month$month <- factor(top_pop_month$month,
+                              levels = 1:12,
+                              labels = c("Jan", "Feb", "Mar","Apr",                                          "May","Jun", "Jul", "Aug",                                          "Sep", "Oct", "Nov", "Dec"))
+
+ggplot(data = top_pop_month,
+       mapping = aes(x = measles_suspect,
+                     y = month,
+                     fill = country)) +
+  geom_density_ridges(alpha = 0.5) +
+  labs(x = "Number of Suspected Measles Cases",
+       y = "Month",
+       fill = "Country",
+       title = " Fig. 1: Monthly Distributions of Suspected Measles Cases Across Countries with the Highest Population by Region",
+       subtitle = "Data from 2012-2025") +
+  scale_x_continuous(breaks = seq(0, 30000, 5000)) +
+  scale_fill_brewer(palette = "Spectral") +
+  theme_light() +
+  theme(text = element_text(family = "Times", size = 12))
+
+```
+
+# China
+
+```{r}
+
+top_pop <- cases_year |>
+  group_by(region) |>
+  slice_max(order_by = total_population, n = 1, with_ties = FALSE)
+ 
+top_pop_month <- left_join(top_pop, cases_month, by = "country")
+
+summ_sus_measles_per_month <- function(country_name){
+  country_data <- top_pop_month |>
+    filter(country == country_name)
+ 
+  summ_sus_measles <- tibble()
+ 
+  for(mon in 1:12) {
+    mon_data <- country_data |>
+      filter(month == mon)
+   
+    summ_sus_measles <- bind_rows(summ_sus_measles, tibble(
+      country = country_name,
+      month = month.name[mon],
+      mean = mean(mon_data$measles_suspect, na.rm = TRUE),
+      SD = sd(mon_data$measles_suspect, na.rm = TRUE)
+    ))
+  }
+ 
+  return(summ_sus_measles)
+}
+
+china_sum <- summ_sus_measles_per_month("China")
+
+china_sum |>
+  select(-country) |>
+  gt() |>
+  fmt_number(columns = c(mean, SD), 
+             decimals = 2) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+    ) |>
+  tab_header(
+    title = md("Summary of Suspected Measles Cases per Month for China") 
+  ) |>
+  tab_caption(
+    caption = md("Table 1")
+  ) |>
+  cols_label(month = "Month", 
+             mean = "Mean",
+             SD = "Standard Deviation") |>
+  tab_spanner(
+    label = "Summary Statistics",
+    columns = c(mean, SD)
+  ) |>   
+  data_color(
+    method = "numeric",
+    palette = "Spectral", 
+    reverse = TRUE
+  )
+  
+
+```
+:::
+
+### Mean Measles Incident Rate by Urban-Rural Classification
+
+```{r}
+#| warning: false
+#| error: false
+urban_type_incident <- function(country_iso3) {
+
+  cases_year_urban_pop_df |>
+    filter(iso3 == country_iso3) |>
+    mutate(urban_type = ifelse(
+      urban_population > 80,
+      "Highly Urbanized",
+      ifelse(urban_population > 50, 
+             "Mixed", 
+             "Primarily Rural"))
+      ) |>
+    summarise(iso3 = country_iso3,
+              urban_type = first(urban_type),
+              mean_incident = 
+                mean(measles_incidence_rate_per_1000000_total_population)
+              )
+
+}
+
+urban_type_df <- map_dfr(cases_year_urban_pop_df$iso3, urban_type_incident)
+
+
+urban_pop_type_df <- cases_year_urban_pop_df |>
+  left_join(urban_type_df, by = "iso3") |>
+  select(c(iso3, urban_population, urban_type, 
+           measles_incidence_rate_per_1000000_total_population,
+           mean_incident))
+
+urban_pop_type_df |>
+  group_by(urban_type) |>
+  summarise(mean_by_type = mean(
+    measles_incidence_rate_per_1000000_total_population),
+    sd_by_type = sd(
+      measles_incidence_rate_per_1000000_total_population)) |>
+  gt() |>
+  fmt_number(columns = c(mean_by_type, sd_by_type), 
+             decimals = 2) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+    ) |>
+  tab_header(
+    title = md("Summary of Mean Measle's Incident Rate by Rural-Urban Classification") 
+  ) |>
+  tab_caption(
+    caption = md("Table 2")
+  ) |>
+  cols_label(urban_type = "Classification", 
+             mean_by_type = "Mean",
+             sd_by_type = "Standard Deviation") |>
+  tab_spanner(
+    label = "Summary Statistics",
+    columns = c(mean_by_type, sd_by_type)
+  )
+```
+
+
+## model and measles by country
+
+### Mean Measles Incidence by Country
+
+```{r}
+#| warning: false
+urban_pop_type_df2 <- urban_pop_type_df |>
+  group_by(urban_type) |>
+  summarise(mean_by_type = mean(
+    measles_incidence_rate_per_1000000_total_population, 
+    na.rm = T),
+    sd_by_type = sd(
+      measles_incidence_rate_per_1000000_total_population,
+      na.rm = T))  
+
+urban_pop_type_df <- urban_pop_type_df |>
+  left_join(urban_pop_type_df2, by = "urban_type") |>
+  filter(iso3 == unique(top_pop_month$iso3.x))
+
+ggplot(data = urban_pop_type_df,
+       mapping = aes(x = iso3, 
+                     y = mean_incident,
+                     color = urban_type)) +
+  geom_segment(aes(yend = mean_incident, 
+                   x = iso3, 
+                   y = 0,
+                   xend = iso3), 
+               color = "gray50") +
+  geom_point(size = 4) +
+  labs(y = "Mean Measles Incident Rate",
+       x = "",
+       title = "Fig 2: Mean Measles Incident Rate by Country",
+       subtitle = "Data from 2012-2025",
+       color = "Urban Classification") +
+  geom_hline(yintercept = 15.8, color = "#FC8D59")  + 
+  annotate("text",
+           x = 1.15,
+           y = 16,
+           label = "Mean Incident Rate \n for Highly Urbanized",
+           size = 2) +
+  geom_hline(yintercept = 59.6, color = "#FFFFBF") + 
+  annotate("text",
+           x = 1.15,
+           y = 60.1,
+           label = "Mean Incident Rate \n for Mixed",
+           size = 2) +
+  geom_hline(yintercept = 68.7, color = "#99D594") + 
+  annotate("text",
+           x = 1.15,
+           y = 68.9,
+           label = "Mean Incident Rate \n for Primarily Rural",
+           size = 2) +
+  scale_color_brewer(palette = "Spectral") +
+  theme_grey() +
+  theme(text = element_text(family = "Times", size = 12))
+```
+
+
+### model
+
+::: {.card title = "Linear Regression for Proportion of Measles Cases per Month"}
+
+```{r}
+#| include: false
+
+measles_prop_year <- cases_year |>
+ group_by(country, year) |>
+ mutate(prop_tot_measles_per_year =
+   measles_total / (measles_total + rubella_total)
+ ) |>
+ select(country, year, prop_tot_measles_per_year) |>
+ ungroup()
+
+
+measles_prop_month <- cases_month |>
+ group_by(iso3, country, month) |>
+ mutate(prop_tot_measles_per_month =
+   measles_total / (measles_total + rubella_total)) |>
+ filter(
+   is.finite(prop_tot_measles_per_month),
+   !is.na(prop_tot_measles_per_month)) |>
+ select(country, iso3, month, prop_tot_measles_per_month) |>
+ ungroup()
+```
+
+```{r}
+merged <- left_join(
+ measles_prop_month, urban_pop_type_df, by = "iso3")
+```
+
+```{r}
+#| include: false
+measles_model <- lm(prop_tot_measles_per_month ~
+                     urban_population,
+                   data = merged)
+summary(measles_model)
+
+```
+
+```{r}
+#| include: false
+
+model_df <- as.data.frame(
+ summary(measles_model)$coefficients, check.names = FALSE) |>
+ rownames_to_column("term") |>
+ filter (term != "Intercept") |>
+ arrange(desc(abs(Estimate))) |>
+ mutate(
+   term = gsub("country", "", term),
+   Estimate = round(Estimate, 3),
+   `Std. Error` = round (`Std. Error`, 3),
+   `t value` = round (`t value`, 2),
+   `p value` = round (`Pr(>|t|)`, 3)) |>
+ select(c("term","Estimate", "Std. Error", "t value", "p value"))
+model_df
+```
+
+```{r}
+
+model_table <- model_df |>
+ gt() |>
+ tab_header(
+   title = md("Multiple Linear Regression Model for Measles Proportion by Country and Year")
+ ) |>
+ tab_caption(
+   caption = md("Estimates of differences in measles proportion (relative to the reference country), in descending order")) |>
+
+ tab_style(
+   style = cell_text(weight = "bold"),
+   locations = cells_column_labels()
+ ) |>
+ fmt_percent( columns = Estimate) |>
+ cols_label(
+   term = "Country",
+   Estimate = "Estimate",
+   `Std. Error` = "Std Error",
+   `t value` = "t-value",
+   `p value` = "p-value"
+ ) |>
+ fmt_number(columns = -c(term, Estimate),
+            decimals = 4
+ )
+
+model_table  
+
+```
+

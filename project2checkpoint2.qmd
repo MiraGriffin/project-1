@@ -1,0 +1,417 @@
+---
+title: "Measles Analysis"
+author: "Mira Griffin, Eloise Melendez, Chloe Schurter"
+format: 
+  dashboard:
+    orientation: columns
+    theme: lux
+embed-resources: true
+logo: measles_by_country.ppm
+logo-alt: "World Map colored by measles cases."
+nav-buttons: 
+- icon: instagram
+  href: https://www.instagram.com/eloisemelendez_/
+- icon: linkedin
+  href: https://www.linkedin.com/in/mira-griffin-31009b382/
+- icon: envelope
+  href: mailto:cbschurt@calpoly.edu
+---
+
+```{r}
+#| label: load-packages
+#| include: false
+#| error: false
+library(tidyverse)
+library(ggridges)
+library(gt)
+library(purrr)
+library(glue)
+library(httr)
+library(tidyjson)
+library(jsonlite)
+library(tidyverse)
+
+
+cases_month <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_month.csv')
+cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_year.csv')
+
+get_urban_pop <- function(country) {
+  base_url <- "https://api.api-ninjas.com/v1/country"
+  my_key <- "kaWqmUxI7Yg3toQOjvhrc9BThDMCDfiTQbfiT4Wp"
+  my_url <- glue("{base_url}?name={country};X-Api-Key={my_key}")
+  country_data <- fromJSON(my_url)
+  
+  country_urban_pop <- country_data |>
+  select(urban_population) |>
+  mutate(iso3 = country)
+  
+  return(country_urban_pop)
+}
+
+unique_countries <- cases_year |>
+  select(iso3) |>
+  distinct() |>
+  pull()
+
+urban_pops <- purrr::map(unique_countries, get_urban_pop)
+write.csv(urban_pops, "Urban Population Percentage.csv")
+
+urban_df <- bind_rows(urban_pops)
+
+
+cases_year_urban_pop <- left_join(cases_year, urban_df, by = "iso3")
+
+cases_year_urban_pop_df <- as.data.frame(cases_year_urban_pop)
+
+```
+
+# Urban Population and Country Analysis
+
+## Measles Cases by Month and Country
+
+### Mean Measles Incident Rate by Urban-Rural Classification
+
+```{r}
+#| warning: false
+#| error: false
+urban_type_incident <- function(country_iso3) {
+
+  cases_year_urban_pop_df |>
+    filter(iso3 == country_iso3) |>
+    mutate(urban_type = ifelse(
+      urban_population > 80,
+      "Highly Urbanized",
+      ifelse(urban_population > 50, 
+             "Mixed", 
+             "Primarily Rural"))
+      ) |>
+    summarise(iso3 = country_iso3,
+              urban_type = first(urban_type),
+              mean_incident = 
+                mean(measles_incidence_rate_per_1000000_total_population)
+              )
+
+}
+
+urban_type_df <- map_dfr(cases_year_urban_pop_df$iso3, urban_type_incident)
+
+
+urban_pop_type_df <- cases_year_urban_pop_df |>
+  left_join(urban_type_df, by = "iso3") |>
+  select(c(iso3, urban_population, urban_type, 
+           measles_incidence_rate_per_1000000_total_population,
+           mean_incident))
+
+urban_pop_type_df |>
+  group_by(urban_type) |>
+  summarise(mean_by_type = mean(
+    measles_incidence_rate_per_1000000_total_population),
+    sd_by_type = sd(
+      measles_incidence_rate_per_1000000_total_population)) |>
+  gt() |>
+  fmt_number(columns = c(mean_by_type, sd_by_type), 
+             decimals = 2) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+    ) |>
+  tab_header(
+    title = md("Summary of Mean Measle's Incident Rate by Rural-Urban Classification") 
+  ) |>
+  tab_caption(
+    caption = md("Table 2")
+  ) |>
+  cols_label(urban_type = "Classification", 
+             mean_by_type = "Mean",
+             sd_by_type = "Standard Deviation") |>
+  tab_spanner(
+    label = "Summary Statistics",
+    columns = c(mean_by_type, sd_by_type)
+  )
+```
+
+
+### Mean Measles Incidence by Country
+
+```{r}
+#| warning: false
+urban_pop_type_df2 <- urban_pop_type_df |>
+  group_by(urban_type) |>
+  summarise(mean_by_type = mean(
+    measles_incidence_rate_per_1000000_total_population, 
+    na.rm = T),
+    sd_by_type = sd(
+      measles_incidence_rate_per_1000000_total_population,
+      na.rm = T))  
+
+top_pop <- cases_year |>
+  group_by(region) |>
+  slice_max(order_by = total_population, n = 1, with_ties = FALSE)
+
+top_pop_month <- left_join(top_pop, cases_month, by = "country")
+
+urban_pop_type_df <- urban_pop_type_df |>
+  left_join(urban_pop_type_df2, by = "urban_type") |>
+  filter(iso3 == unique(top_pop_month$iso3.x))
+
+ggplot(data = urban_pop_type_df,
+       mapping = aes(x = iso3, 
+                     y = mean_incident,
+                     color = urban_type)) +
+  geom_segment(aes(yend = mean_incident, 
+                   x = iso3, 
+                   y = 0,
+                   xend = iso3), 
+               color = "gray50") +
+  geom_point(size = 4) +
+  labs(y = "Mean Measles Incident Rate",
+       x = "",
+       title = "Fig 2: Mean Measles Incident Rate by Country",
+       subtitle = "Data from 2012-2025",
+       color = "Urban Classification") +
+  geom_hline(yintercept = 15.8, color = "#FC8D59")  + 
+  annotate("text",
+           x = 1.15,
+           y = 16,
+           label = "Mean Incident Rate \n for Highly Urbanized",
+           size = 2) +
+  geom_hline(yintercept = 59.6, color = "#FFFFBF") + 
+  annotate("text",
+           x = 1.15,
+           y = 60.1,
+           label = "Mean Incident Rate \n for Mixed",
+           size = 2) +
+  geom_hline(yintercept = 68.7, color = "#99D594") + 
+  annotate("text",
+           x = 1.15,
+           y = 68.9,
+           label = "Mean Incident Rate \n for Primarily Rural",
+           size = 2) +
+  scale_color_brewer(palette = "Spectral") +
+  theme_grey() +
+  theme(text = element_text(family = "Times", size = 12))
+```
+
+
+## model 
+
+### model
+
+::: {.card title = "Linear Regression for Proportion of Measles Cases per Month"}
+
+```{r}
+#| include: false
+
+measles_prop_year <- cases_year |>
+ group_by(country, year) |>
+ mutate(prop_tot_measles_per_year =
+   measles_total / (measles_total + rubella_total)
+ ) |>
+ select(country, year, prop_tot_measles_per_year) |>
+ ungroup()
+
+
+measles_prop_month <- cases_month |>
+ group_by(iso3, country, month) |>
+ mutate(prop_tot_measles_per_month =
+   measles_total / (measles_total + rubella_total)) |>
+ filter(
+   is.finite(prop_tot_measles_per_month),
+   !is.na(prop_tot_measles_per_month)) |>
+ select(country, iso3, month, prop_tot_measles_per_month) |>
+ ungroup()
+```
+
+```{r}
+merged <- left_join(
+ measles_prop_month, urban_pop_type_df, by = "iso3")
+```
+
+```{r}
+#| include: false
+measles_model <- lm(prop_tot_measles_per_month ~
+                     urban_population,
+                   data = merged)
+summary(measles_model)
+
+```
+
+```{r}
+#| include: false
+
+model_df <- as.data.frame(
+ summary(measles_model)$coefficients, check.names = FALSE) |>
+ rownames_to_column("term") |>
+ filter (term != "Intercept") |>
+ arrange(desc(abs(Estimate))) |>
+ mutate(
+   term = gsub("country", "", term),
+   Estimate = round(Estimate, 3),
+   `Std. Error` = round (`Std. Error`, 3),
+   `t value` = round (`t value`, 2),
+   `p value` = round (`Pr(>|t|)`, 3)) |>
+ select(c("term","Estimate", "Std. Error", "t value", "p value"))
+model_df
+```
+
+```{r}
+
+model_table <- model_df |>
+ gt() |>
+ tab_header(
+   title = md("Multiple Linear Regression Model for Measles Proportion by Country and Year")
+ ) |>
+ tab_caption(
+   caption = md("Estimates of differences in measles proportion (relative to the reference country), in descending order")) |>
+
+ tab_style(
+   style = cell_text(weight = "bold"),
+   locations = cells_column_labels()
+ ) |>
+ fmt_percent( columns = Estimate) |>
+ cols_label(
+   term = "Country",
+   Estimate = "Estimate",
+   `Std. Error` = "Std Error",
+   `t value` = "t-value",
+   `p value` = "p-value"
+ ) |>
+ fmt_number(columns = -c(term, Estimate),
+            decimals = 4
+ )
+
+model_table  
+
+```
+
+
+
+
+# United States Population Analysis and Visualizations
+
+## incorporate data 
+
+### read in data {height=60%}
+
+```{r}
+
+library(ggplot2)
+library(sf)
+library(tidyverse)
+library(tigris)
+library(leaflet)
+install.packages("plotly", repos = "https://github.com/MiraGriffin/project-1")
+library(plotly)
+
+
+uspops <- read.csv("data-table.csv")
+us_map <- states(cb = TRUE)
+us_map <- us_map |>
+ filter(!STATEFP %in% c("02","15","72","66","60","78","69"))
+
+urban <- read.csv("Urban Pop Rate per State (1).csv")
+urban <- urban |>
+ filter(!State %in% c("Washington D.C.*", "Puerto Rico**")) |>
+ mutate(State = trimws(gsub("\\*+", "", State)),
+        Urban.Population = as.numeric(gsub("%", "", Urban.Population)))
+
+
+map_all <- us_map |>
+ left_join(urban, by = c("NAME" = "State")) |>
+ left_join(uspops, by = c("NAME" = "Location"))
+
+
+
+state_points <- st_centroid(map_all)
+```
+
+### explain why we are using the us {height=40%}
+::: {card title = "Why the US?"} 
+We chose to investigate population and measles incidince rate by state in the United States becuase our original data set was created following an outbreak of Measles in the US. We want to explore the relationship between population and measles cases in each state. 
+:::
+
+
+## visualizations
+
+### interactive plot and leaflet plot
+
+::: panel-tabset
+# 2024 Urban Pop. per State Map
+
+```{r}
+colorstate <- colorNumeric(
+ palette = "viridis",
+ domain = map_all$Urban.Population
+)
+
+leaflet(map_all) |>
+ addTiles() |>
+ addPolygons(
+   fillColor = ~colorstate(Urban.Population),
+   color = "black",
+   weight = 1
+ ) |>
+ addCircleMarkers(
+   data = state_points,
+   radius = ~sqrt(X2024) * 2,
+   color = "red",
+   fillOpacity = 0.6,
+   stroke = FALSE,
+   popup = ~paste("Cases:", X2024)
+ ) |>
+ addLegend(
+   pal = colorstate,
+   values = ~Urban.Population,
+   title = "2024 Urban Population Rate per State",
+   position = "bottomright"
+ )
+```
+
+
+# Measles Cases by State 2024-2026
+
+```{r}
+
+uspops <- uspops |>
+  rename(
+    "2024" = X2024,
+    "2025" = X2025,
+    "2026" = X2026
+  )
+
+measles_per_year_by_state <- uspops |>
+  select(-c(year)) |>
+  pivot_longer(
+    cols = c(`2024`, `2025`, `2026`),
+    names_to = "year",
+    values_to = "num_cases"
+  ) |>
+  group_by(Location, year) |>
+  summarise(tot_measles = sum(num_cases))
+
+plot_ly(
+  data = measles_per_year_by_state,
+  x = ~year,
+  y = ~tot_measles,
+  color = ~Location,
+  text = ~Location,
+  type = "scatter",
+  mode = "markers",
+  hovertemplate = paste(
+    "State: %{text}",
+    "Cases: %{y}"
+  )
+) |>
+  layout(
+    title = "Measles Cases by State between 2024 and 2026",
+    xaxis = list(title = "Year"),
+    yaxis = list(title = "Measles Cases")
+  )
+
+```
+
+
+
+
+
+
