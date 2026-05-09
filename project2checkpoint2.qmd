@@ -6,7 +6,7 @@ format:
     orientation: columns
     theme: lux
 embed-resources: true
-logo: measles_by_country.ppm
+logo: measlescasespic.png
 logo-alt: "World Map colored by measles cases."
 nav-buttons: 
 - icon: instagram
@@ -63,6 +63,39 @@ cases_year_urban_pop <- left_join(cases_year, urban_df, by = "iso3")
 
 cases_year_urban_pop_df <- as.data.frame(cases_year_urban_pop)
 
+```
+
+```{r}
+#| include: false
+#| height: 600
+library(ggplot2)
+library(sf)
+library(tidyverse)
+library(tigris)
+library(leaflet)
+#install.packages("plotly", repos = "https://github.com/MiraGriffin/project-1")
+library(plotly)
+
+
+uspops <- read.csv("data-table.csv")
+us_map <- states(cb = TRUE)
+us_map <- us_map |>
+ filter(!STATEFP %in% c("02","15","72","66","60","78","69"))
+
+urban <- read.csv("Urban Pop Rate per State (1).csv")
+urban <- urban |>
+ filter(!State %in% c("Washington D.C.*", "Puerto Rico**")) |>
+ mutate(State = trimws(gsub("\\*+", "", State)),
+        Urban.Population = as.numeric(gsub("%", "", Urban.Population)))
+
+
+map_all <- us_map |>
+ left_join(urban, by = c("NAME" = "State")) |>
+ left_join(uspops, by = c("NAME" = "Location"))
+
+
+
+state_points <- st_centroid(map_all)
 ```
 
 # Urban Population and Country Analysis
@@ -286,50 +319,11 @@ model_table
 ```
 
 
-
-
 # United States Population Analysis and Visualizations
-
-## incorporate data 
-
-### {height=60%}
-
-```{r}
-#| include: false
-#| height: 600
-library(ggplot2)
-library(sf)
-library(tidyverse)
-library(tigris)
-library(leaflet)
-#install.packages("plotly", repos = "https://github.com/MiraGriffin/project-1")
-library(plotly)
-
-
-uspops <- read.csv("data-table.csv")
-us_map <- states(cb = TRUE)
-us_map <- us_map |>
- filter(!STATEFP %in% c("02","15","72","66","60","78","69"))
-
-urban <- read.csv("Urban Pop Rate per State (1).csv")
-urban <- urban |>
- filter(!State %in% c("Washington D.C.*", "Puerto Rico**")) |>
- mutate(State = trimws(gsub("\\*+", "", State)),
-        Urban.Population = as.numeric(gsub("%", "", Urban.Population)))
-
-
-map_all <- us_map |>
- left_join(urban, by = c("NAME" = "State")) |>
- left_join(uspops, by = c("NAME" = "Location"))
-
-
-
-state_points <- st_centroid(map_all)
-```
 
 ## UNITED STATES POPULATION ANALYSIS AND VISUALIZATIONS
 
-### explain why we are using the us {height=40%}
+### explain why we are using the us
 
 ::: {.card title = “Why the US?”} 
 We chose to investigate population and measles incidince rate by state in the United States becuase our original data set was created following an outbreak of Measles in the US. We want to explore the relationship between population and measles cases in each state.
@@ -341,7 +335,7 @@ We chose to investigate population and measles incidince rate by state in the Un
 ### interactive plot and leaflet plot
 
 ::: {.panel-tabset}
-#### 2024 Urban Pop. per State Map
+# 2024 Urban Pop. per State Map
 
 ```{r}
 colorstate <- colorNumeric(
@@ -373,7 +367,7 @@ leaflet(map_all) |>
 ```
 
 
-Measles Cases by State 2024-2026
+# Measles Cases by State 2024-2026
 
 ```{r}
 
