@@ -206,9 +206,9 @@ ggplot(data = urban_pop_type_df,
 ```
 
 
-## model 
+### model 
 
-### model
+## model
 
 ::: {.card title="Linear Regression for Proportion of Measles Cases per Month"}
 
@@ -309,11 +309,12 @@ model_table
 ```
 :::
 
+# Country Specific Data {orientation="columns" scrolling="true"}
+
 ::: {.card title="Why the US?"} 
 
-## UNITED STATES POPULATION ANALYSIS AND VISUALIZATIONS
 
-### 
+## UNITED STATES POPULATION ANALYSIS AND VISUALIZATIONS 
 
 
 We chose to investigate population and measles incidince rate by state in the United States becuase our original data set was created following an outbreak of Measles in the US. We want to explore the relationship between population and measles cases in each state.
