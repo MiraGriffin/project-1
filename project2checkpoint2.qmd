@@ -4,7 +4,7 @@ author: "Mira Griffin, Eloise Melendez, Chloe Schurter"
 format: 
   dashboard:
     orientation: columns
-    theme: lux
+    theme: minty
 embed-resources: true
 logo: measlescasespic.png
 logo-alt: "World Map colored by measles cases."
@@ -21,6 +21,7 @@ nav-buttons:
 #| label: load-packages
 #| include: false
 #| error: false
+
 library(tidyverse)
 library(ggridges)
 library(gt)
@@ -35,29 +36,8 @@ library(tidyverse)
 cases_month <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_month.csv')
 cases_year <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_year.csv')
 
-get_urban_pop <- function(country) {
-  base_url <- "https://api.api-ninjas.com/v1/country"
-  my_key <- "JFIU1ROdejIn63ZILGrRvbZ7MDUY1eRVmCDSKh1I"
-  my_url <- glue("{base_url}?name={country};X-Api-Key={my_key}")
-  country_data <- fromJSON(my_url)
-  
-  country_urban_pop <- country_data |>
-  select(urban_population) |>
-  mutate(iso3 = country)
-  
-  return(country_urban_pop)
-}
 
-unique_countries <- cases_year |>
-  select(iso3) |>
-  distinct() |>
-  pull()
-
-urban_pops <- purrr::map(unique_countries, get_urban_pop)
-write.csv(urban_pops, "Urban Population Percentage.csv")
-
-urban_df <- bind_rows(urban_pops)
-
+urban_df <- read_csv("Urban Population Percentage Dataframe.csv")
 
 cases_year_urban_pop <- left_join(cases_year, urban_df, by = "iso3")
 
@@ -230,7 +210,7 @@ ggplot(data = urban_pop_type_df,
 
 ### model
 
-::: {.card title = "Linear Regression for Proportion of Measles Cases per Month"}
+::: {.card title="Linear Regression for Proportion of Measles Cases per Month"}
 
 ```{r}
 #| include: false
@@ -312,21 +292,32 @@ model_table <- model_df |>
  ) |>
  fmt_number(columns = -c(term, Estimate),
             decimals = 4
- )
+ ) |>
+  text_transform(
+    locations = cells_body(columns = term),
+    fn = function(x) {
+      dplyr::recode(
+        x,
+        "(Intercept)" = "Baseline",
+        "urban_population" = "Urban Population Rate"
+      )
+    }
+  )
 
 model_table  
 
 ```
+:::
 
-
-# United States Population Analysis and Visualizations
+::: {.card title="Why the US?"} 
 
 ## UNITED STATES POPULATION ANALYSIS AND VISUALIZATIONS
 
-### explain why we are using the us
+### 
 
-::: {.card title = “Why the US?”} 
+
 We chose to investigate population and measles incidince rate by state in the United States becuase our original data set was created following an outbreak of Measles in the US. We want to explore the relationship between population and measles cases in each state.
+
 :::
 
 
@@ -335,7 +326,7 @@ We chose to investigate population and measles incidince rate by state in the Un
 ### interactive plot and leaflet plot
 
 ::: {.panel-tabset}
-# 2024 Urban Pop. per State Map
+### 2024 Urban Pop. per State Map
 
 ```{r}
 colorstate <- colorNumeric(
@@ -367,7 +358,7 @@ leaflet(map_all) |>
 ```
 
 
-# Measles Cases by State 2024-2026
+### Measles Cases by State 2024-2026
 
 ```{r}
 
@@ -389,6 +380,7 @@ measles_per_year_by_state <- uspops |>
   group_by(Location, year) |>
   summarise(tot_measles = sum(num_cases))
 
+
 plot_ly(
   data = measles_per_year_by_state,
   x = ~year,
@@ -408,9 +400,9 @@ plot_ly(
     yaxis = list(title = "Measles Cases")
   )
 
+
 ```
-
-
+:::
 
 
 

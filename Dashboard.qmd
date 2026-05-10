@@ -372,7 +372,17 @@ model_table <- model_df |>
  ) |>
  fmt_number(columns = -c(term, Estimate),
             decimals = 4
- )
+ ) |>
+  text_transform(
+    locations = cells_body(columns = term),
+    fn = function(x) {
+      dplyr::recode(
+        x,
+        "(Intercept)" = "Baseline",
+        "urban_population" = "Urban Population Rate"
+      )
+    }
+  )
 
 model_table 
 
