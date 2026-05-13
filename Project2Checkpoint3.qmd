@@ -31,6 +31,7 @@ library(httr)
 library(tidyjson)
 library(jsonlite)
 library(tidyverse)
+library(shiny)
 
 
 cases_month <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2025/2025-06-24/cases_month.csv')
@@ -82,7 +83,7 @@ state_points <- st_centroid(map_all)
 
 ## Measles Cases by Month and Country
 
-### Mean Measles Incident Rate by Urban-Rural Classification
+### Mean Measles Incident Rate by Urban-Rural Classification {height="40%"}
 
 ```{r}
 #| warning: false
@@ -131,9 +132,6 @@ urban_pop_type_df |>
   tab_header(
     title = md("Summary of Mean Measle's Incident Rate by Rural-Urban Classification") 
   ) |>
-  tab_caption(
-    caption = md("Table 2")
-  ) |>
   cols_label(urban_type = "Classification", 
              mean_by_type = "Mean",
              sd_by_type = "Standard Deviation") |>
@@ -144,7 +142,7 @@ urban_pop_type_df |>
 ```
 
 
-### Mean Measles Incidence by Country
+### Mean Measles Incidence by Country {height="60%"}
 
 ```{r}
 #| warning: false
@@ -208,106 +206,21 @@ ggplot(data = urban_pop_type_df,
 
 ## model 
 
-### model
-
-::: {.card title="Linear Regression for Proportion of Measles Cases per Month"}
-
-```{r}
-#| include: false
-
-measles_prop_year <- cases_year |>
- group_by(country, year) |>
- mutate(prop_tot_measles_per_year =
-   measles_total / (measles_total + rubella_total)
- ) |>
- select(country, year, prop_tot_measles_per_year) |>
- ungroup()
-
-
-measles_prop_month <- cases_month |>
- group_by(iso3, country, month) |>
- mutate(prop_tot_measles_per_month =
-   measles_total / (measles_total + rubella_total)) |>
- filter(
-   is.finite(prop_tot_measles_per_month),
-   !is.na(prop_tot_measles_per_month)) |>
- select(country, iso3, month, prop_tot_measles_per_month) |>
- ungroup()
-```
-
-```{r}
-merged <- left_join(
- measles_prop_month, urban_pop_type_df, by = "iso3")
-```
-
-```{r}
-#| include: false
-measles_model <- lm(prop_tot_measles_per_month ~
-                     urban_population,
-                   data = merged)
-summary(measles_model)
-
-```
-
-```{r}
-#| include: false
-
-model_df <- as.data.frame(
- summary(measles_model)$coefficients, check.names = FALSE) |>
- rownames_to_column("term") |>
- filter (term != "Intercept") |>
- arrange(desc(abs(Estimate))) |>
- mutate(
-   term = gsub("country", "", term),
-   Estimate = round(Estimate, 3),
-   `Std. Error` = round (`Std. Error`, 3),
-   `t value` = round (`t value`, 2),
-   `p value` = round (`Pr(>|t|)`, 3)) |>
- select(c("term","Estimate", "Std. Error", "t value", "p value"))
-model_df
-```
-
+::: {.card title="Distribution of Measles Cases by Month based on Countries with large Populations"}
 
 ```{r}
 
-model_table <- model_df |>
- gt() |>
- tab_header(
-   title = md("Multiple Linear Regression Model for Measles Proportion by Country and Year")
- ) |>
- tab_caption(
-   caption = md("Estimates of differences in measles proportion (relative to the reference country), in descending order")) |>
+selectInput('country', 'Select Country', 
+            c("China", "India", "Nigeria",
+              "Pakistan", "Russia Federation", "United States of America"))
 
- tab_style(
-   style = cell_text(weight = "bold"),
-   locations = cells_column_labels()
- ) |>
- fmt_percent( columns = Estimate) |>
- cols_label(
-   term = "Country",
-   Estimate = "Estimate",
-   `Std. Error` = "Std Error",
-   `t value` = "t-value",
-   `p value` = "p-value"
- ) |>
- fmt_number(columns = -c(term, Estimate),
-            decimals = 4
- ) |>
-  text_transform(
-    locations = cells_body(columns = term),
-    fn = function(x) {
-      dplyr::recode(
-        x,
-        "(Intercept)" = "Baseline",
-        "urban_population" = "Urban Population Rate"
-      )
-    }
-  )
 
-model_table  
+
 
 ```
+
 :::
+
 
 # US Analysis
 
