@@ -244,7 +244,8 @@ ggplot(data = urban_pop_type_df,
 
 selectInput('country', 'Select Country', 
             c("China", "India", "Nigeria",
-              "Pakistan", "Russia Federation", "United States of America"))
+              "Pakistan", "Russia Federation", 
+              "United States of America"))
 
 tableOutput('country_table')
 ```
@@ -287,8 +288,6 @@ output$country_table <- renderTable ({
 })
 
 ```
-
-
 
 :::
 
