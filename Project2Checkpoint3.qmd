@@ -6,6 +6,7 @@ format:
     orientation: columns
     theme: lux
 embed-resources: true
+server: shiny
 logo: measlescasespic.png
 logo-alt: "World Map colored by measles cases."
 nav-buttons: 
@@ -18,6 +19,7 @@ nav-buttons:
 ---
 
 ```{r}
+#| context: setup
 #| label: load-packages
 #| include: false
 #| error: false
@@ -43,6 +45,34 @@ urban_df <- read_csv("Urban Population Percentage Dataframe.csv")
 cases_year_urban_pop <- left_join(cases_year, urban_df, by = "iso3")
 
 cases_year_urban_pop_df <- as.data.frame(cases_year_urban_pop)
+
+#country filter function for table
+top_pop <- cases_year |>
+  group_by(region) |>
+  slice_max(order_by = total_population, n = 1, with_ties = FALSE)
+ 
+top_pop_month <- left_join(top_pop, cases_month, by = "country")
+
+summ_sus_measles_per_month <- function(country_name){
+  country_data <- top_pop_month |>
+    filter(country == country_name)
+ 
+  summ_sus_measles <- tibble()
+ 
+  for(mon in 1:12) {
+    mon_data <- country_data |>
+      filter(month == mon)
+   
+    summ_sus_measles <- bind_rows(summ_sus_measles, tibble(
+      country = country_name,
+      month = month.name[mon],
+      mean = mean(mon_data$measles_suspect, na.rm = TRUE),
+      SD = sd(mon_data$measles_suspect, na.rm = TRUE)
+    ))
+  }
+ 
+  return(summ_sus_measles)
+}
 
 ```
 
@@ -210,14 +240,55 @@ ggplot(data = urban_pop_type_df,
 
 ```{r}
 
+#| content: card-toolbar
+
 selectInput('country', 'Select Country', 
             c("China", "India", "Nigeria",
               "Pakistan", "Russia Federation", "United States of America"))
 
+tableOutput('country_table')
+```
 
 
+```{r}
+#| context: server
+
+output$country_table <- renderTable ({
+  tabledata <- summ_sus_measles_per_month(input$country)
+  
+  tabledata |>
+  select(-country) |>
+  gt() |>
+  fmt_number(columns = c(mean, SD), 
+             decimals = 2) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+    ) |>
+  tab_header(
+    title = paste("Summary of Suspected Measles Cases per Month for", input$country) 
+  ) |>
+  tab_caption(
+    caption = md("Table 1")
+  ) |>
+  cols_label(month = "Month", 
+             mean = "Mean",
+             SD = "Standard Deviation") |>
+  tab_spanner(
+    label = "Summary Statistics",
+    columns = c(mean, SD)
+  ) |>   
+  data_color(
+    method = "numeric",
+    palette = "Spectral", 
+    reverse = TRUE
+  )
+  
+})
 
 ```
+
+
 
 :::
 
