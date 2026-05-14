@@ -1,14 +1,14 @@
 ---
 title: "Measles Analysis"
 author: "Mira Griffin, Eloise Melendez, Chloe Schurter"
-format: 
+format:
   dashboard:
     orientation: columns
-    theme: lux
+    theme: minty
 embed-resources: true
 logo: measlescasespic.png
 logo-alt: "World Map colored by measles cases."
-nav-buttons: 
+nav-buttons:
 - icon: instagram
   href: https://www.instagram.com/eloisemelendez_/
 - icon: linkedin
@@ -94,13 +94,13 @@ urban_type_incident <- function(country_iso3) {
     mutate(urban_type = ifelse(
       urban_population > 80,
       "Highly Urbanized",
-      ifelse(urban_population > 50, 
-             "Mixed", 
+      ifelse(urban_population > 50,
+             "Mixed",
              "Primarily Rural"))
       ) |>
     summarise(iso3 = country_iso3,
               urban_type = first(urban_type),
-              mean_incident = 
+              mean_incident =
                 mean(measles_incidence_rate_per_1000000_total_population)
               )
 
@@ -111,7 +111,7 @@ urban_type_df <- map_dfr(cases_year_urban_pop_df$iso3, urban_type_incident)
 
 urban_pop_type_df <- cases_year_urban_pop_df |>
   left_join(urban_type_df, by = "iso3") |>
-  select(c(iso3, urban_population, urban_type, 
+  select(c(iso3, urban_population, urban_type,
            measles_incidence_rate_per_1000000_total_population,
            mean_incident))
 
@@ -122,19 +122,19 @@ urban_pop_type_df |>
     sd_by_type = sd(
       measles_incidence_rate_per_1000000_total_population)) |>
   gt() |>
-  fmt_number(columns = c(mean_by_type, sd_by_type), 
+  fmt_number(columns = c(mean_by_type, sd_by_type),
              decimals = 2) |>
   tab_style(
     style = cell_text(weight = "bold"),
     locations = cells_column_labels()
     ) |>
   tab_header(
-    title = md("Summary of Mean Measle's Incident Rate by Rural-Urban Classification") 
+    title = md("Summary of Mean Measle's Incident Rate by Rural-Urban Classification")
   ) |>
   tab_caption(
     caption = md("Table 2")
   ) |>
-  cols_label(urban_type = "Classification", 
+  cols_label(urban_type = "Classification",
              mean_by_type = "Mean",
              sd_by_type = "Standard Deviation") |>
   tab_spanner(
@@ -151,11 +151,11 @@ urban_pop_type_df |>
 urban_pop_type_df2 <- urban_pop_type_df |>
   group_by(urban_type) |>
   summarise(mean_by_type = mean(
-    measles_incidence_rate_per_1000000_total_population, 
+    measles_incidence_rate_per_1000000_total_population,
     na.rm = T),
     sd_by_type = sd(
       measles_incidence_rate_per_1000000_total_population,
-      na.rm = T))  
+      na.rm = T)) 
 
 top_pop <- cases_year |>
   group_by(region) |>
@@ -168,13 +168,13 @@ urban_pop_type_df <- urban_pop_type_df |>
   filter(iso3 == unique(top_pop_month$iso3.x))
 
 ggplot(data = urban_pop_type_df,
-       mapping = aes(x = iso3, 
+       mapping = aes(x = iso3,
                      y = mean_incident,
                      color = urban_type)) +
-  geom_segment(aes(yend = mean_incident, 
-                   x = iso3, 
+  geom_segment(aes(yend = mean_incident,
+                   x = iso3,
                    y = 0,
-                   xend = iso3), 
+                   xend = iso3),
                color = "gray50") +
   geom_point(size = 4) +
   labs(y = "Mean Measles Incident Rate",
@@ -182,19 +182,19 @@ ggplot(data = urban_pop_type_df,
        title = "Fig 2: Mean Measles Incident Rate by Country",
        subtitle = "Data from 2012-2025",
        color = "Urban Classification") +
-  geom_hline(yintercept = 15.8, color = "#FC8D59")  + 
+  geom_hline(yintercept = 15.8, color = "#FC8D59")  +
   annotate("text",
            x = 1.15,
            y = 16,
            label = "Mean Incident Rate \n for Highly Urbanized",
            size = 2) +
-  geom_hline(yintercept = 59.6, color = "#FFFFBF") + 
+  geom_hline(yintercept = 59.6, color = "#FFFFBF") +
   annotate("text",
            x = 1.15,
            y = 60.1,
            label = "Mean Incident Rate \n for Mixed",
            size = 2) +
-  geom_hline(yintercept = 68.7, color = "#99D594") + 
+  geom_hline(yintercept = 68.7, color = "#99D594") +
   annotate("text",
            x = 1.15,
            y = 68.9,
@@ -206,9 +206,9 @@ ggplot(data = urban_pop_type_df,
 ```
 
 
-## model 
-
 ### model
+
+## model
 
 ::: {.card title="Linear Regression for Proportion of Measles Cases per Month"}
 
@@ -304,16 +304,17 @@ model_table <- model_df |>
     }
   )
 
-model_table  
+model_table 
 
 ```
 :::
 
-::: {.card title="Why the US?"} 
+# Country Specific Data {orientation="columns" scrolling="true"}
+
+::: {.card title="Why the US?"}
+
 
 ## UNITED STATES POPULATION ANALYSIS AND VISUALIZATIONS
-
-### 
 
 
 We chose to investigate population and measles incidince rate by state in the United States becuase our original data set was created following an outbreak of Measles in the US. We want to explore the relationship between population and measles cases in each state.
@@ -403,7 +404,4 @@ plot_ly(
 
 ```
 :::
-
-
-
 

@@ -9877,3 +9877,22 @@ window.document.addEventListener("DOMContentLoaded", function (_event) {
 
 
 </body></html>
+<script>
+  window.backupDefine = window.define;
+  window.define = undefined;
+</script>
+<script type="text/javascript" src="quarto-preview.js"></script>
+<script>
+  window.define = window.backupDefine;
+  window.backupDefine = undefined;
+</script>
+<script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+    window.QuartoPreview.init({
+      origin: "",
+      search: "",
+      inputFile: "/Users/miragriffin/Desktop/stat 431/project-1/project2checkpoint2.qmd",
+      isPresentation: false
+    });
+  })
+</script>
