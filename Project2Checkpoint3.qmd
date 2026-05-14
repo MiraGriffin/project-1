@@ -244,17 +244,17 @@ ggplot(data = urban_pop_type_df,
 
 selectInput('country', 'Select Country', 
             c("China", "India", "Nigeria",
-              "Pakistan", "Russia Federation", 
+              "Pakistan", "Russian Federation", 
               "United States of America"))
 
-tableOutput('country_table')
+gt_output('country_table')
 ```
 
 
 ```{r}
 #| context: server
 
-output$country_table <- renderTable ({
+output$country_table <- render_gt ({
   tabledata <- summ_sus_measles_per_month(input$country)
   
   tabledata |>
@@ -280,6 +280,7 @@ output$country_table <- renderTable ({
     columns = c(mean, SD)
   ) |>   
   data_color(
+    columns = c(mean, SD),
     method = "numeric",
     palette = "Spectral", 
     reverse = TRUE
