@@ -100,6 +100,7 @@ measles_per_year_by_state <- uspops |>
 measles_2024 <- measles_per_year_by_state |>
   filter(year == "2024")
 
+
 ```
 
 ```{r}
@@ -133,6 +134,10 @@ map_all <- us_map |>
 
 
 state_points <- st_centroid(map_all)
+
+urban_measles_2024 <- left_join(urban, measles_2024, by = c("State" = "Location"))
+urban_measles_2024 <- urban_measles_2024 |>
+  mutate(measles_per_urban_pct = tot_measles/Urban.Population)
 ```
 
 # Urban Population and Country Analysis
@@ -358,9 +363,10 @@ output$country_plot <- renderPlot({
 
 ## 
 
-::: {.card title="Why the US?"} 
+::: {.card title="Why the US?" height="25%"} 
 
 We chose to investigate population and measles incidence rate by state in the United States because our original data set was created following an outbreak of Measles in the US. We want to explore the relationship between population and measles cases in each state.
+
 
 :::
 
@@ -384,6 +390,20 @@ list(icon = "hospital",
      color = "#82b8b6", 
      value = paste0(measles_2024$Location[which.max(measles_2024$tot_measles)], ": ", 
                     measles_2024$tot_measles[which.max(measles_2024$tot_measles)]
+  ))
+```
+
+###
+
+```{r}
+#| content: valuebox 
+#| title: "Highest Proportion of Measles to Urban Population" 
+list(icon = "percent", 
+     color = "#FC8D59", 
+     value = paste0(urban_measles_2024$State[
+       which.max(urban_measles_2024$measles_per_urban_pct)], ": ", 
+       round(urban_measles_2024$measles_per_urban_pct[which.max(
+         urban_measles_2024$measles_per_urban_pct)], 2)
   ))
 ```
 
