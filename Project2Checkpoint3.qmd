@@ -74,6 +74,32 @@ summ_sus_measles_per_month <- function(country_name){
   return(summ_sus_measles)
 }
 
+
+#valueboxes and leaflet
+
+uspops <- read.csv("data-table.csv")
+
+uspops <- uspops |>
+  mutate(X2024 = as.numeric(X2024)) |>
+  rename(
+    "2024" = X2024,
+    "2025" = X2025,
+    "2026" = X2026
+  )
+
+measles_per_year_by_state <- uspops |>
+  select(-c(year)) |>
+  pivot_longer(
+    cols = c(`2024`, `2025`, `2026`),
+    names_to = "year",
+    values_to = "num_cases"
+  ) |>
+  group_by(Location, year) |>
+  summarise(tot_measles = sum(num_cases))
+
+measles_2024 <- measles_per_year_by_state |>
+  filter(year == "2024")
+
 ```
 
 ```{r}
@@ -330,19 +356,38 @@ output$country_plot <- renderPlot({
 
 # US Analysis
 
+## 
+
 ::: {.card title="Why the US?"} 
 
-##
-
-### 
-
-
-We chose to investigate population and measles incidince rate by state in the United States becuase our original data set was created following an outbreak of Measles in the US. We want to explore the relationship between population and measles cases in each state.
+We chose to investigate population and measles incidence rate by state in the United States because our original data set was created following an outbreak of Measles in the US. We want to explore the relationship between population and measles cases in each state.
 
 :::
 
+### 
 
-## visualizations
+```{r}
+#| content: valuebox 
+#| title: "Highest Urban Population" 
+list(icon = "people-fill", 
+     color = "#ffed94", 
+     value = paste0(urban$State[which.max(urban$Urban.Population)], ": ",
+                    urban$Urban.Population[which.max(urban$Urban.Population)] ))
+```
+
+### 
+
+```{r}
+#| content: valuebox 
+#| title: "Highest Measles Cases" 
+list(icon = "hospital", 
+     color = "#82b8b6", 
+     value = paste0(measles_2024$Location[which.max(measles_2024$tot_measles)], ": ", 
+                    measles_2024$tot_measles[which.max(measles_2024$tot_measles)]
+  ))
+```
+
+## visualizations {width = "60%"}
 
 ### interactive plot and leaflet plot
 
